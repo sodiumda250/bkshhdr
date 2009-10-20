@@ -1,4 +1,4 @@
-/* $Id: hdrwin.h,v 1.27 2005/04/26 05:34:58 woods Exp $ */
+/* $Id: hdrwin.h,v 1.29 2005/04/28 08:18:13 woods Exp $ */
 
 #ifndef HDRWIN_H
 #define HDRWIN_H
@@ -40,6 +40,20 @@ public:
     static const int addx(){return c_addx;};
     /** @brief ウィンドウの大きさの縦の最小値(タイトルバー、枠の大きさなど) */
     static const int addy(){return c_addy;};
+
+    static headerWindow& getWindow(const HWND hwnd);
+
+    // メッセージハンドラ
+    LRESULT OnChar(WPARAM wParam, LPARAM lParam);
+    LRESULT OnMove(WPARAM wParam, LPARAM lParam);
+    LRESULT OnPaint(WPARAM wParam, LPARAM lParam);
+    LRESULT OnMouseMove(WPARAM wParam, LPARAM lParam);
+    LRESULT OnActivate(WPARAM wParam, LPARAM lParam);
+    LRESULT OnLButtonDown(WPARAM wParam, LPARAM lParam);
+    LRESULT OnLButtonUp(WPARAM wParam, LPARAM lParam);
+    LRESULT OnLButtonDblClk(WPARAM wParam, LPARAM lParam);
+    LRESULT OnNCLButtonDblClk(WPARAM wParam, LPARAM lParam);
+    LRESULT OnKillFocus(WPARAM wParam, LPARAM lParam);
 
     /// @brief 設定されているフォントを削除する
     static void deleteFont(void) {

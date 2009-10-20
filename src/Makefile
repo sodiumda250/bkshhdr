@@ -1,8 +1,8 @@
 #!/usr/bin/make -f
-# $Id: Makefile,v 1.49.2.3 2005/05/30 03:56:01 woods Exp $
+# $Id: Makefile,v 1.54 2005/05/30 02:53:45 woods Exp $
 
 MAJOR = 0
-MINOR = 8
+MINOR = 9
 TEENY = 1
 
 COPYRIGHT = '"Copyright (C) 2000-2005 woods"'
@@ -33,6 +33,7 @@ ZIP = zip
 LHA = lha
 TOUCH = touch
 FIND = find
+INSTALL = install
 
 # Compile and Link option
 CFLAGS = -g -O -Wall -pipe -mno-cygwin -I/usr/inlcude/w32api \
@@ -54,7 +55,7 @@ all: $(TARGET)
 
 install: all
 	mkdir -p $(INSTALLPATH)
-	install -p -s $(TARGET) $(INSTALLPATH)/$(INSTALLNAME)
+	$(INSTALL) -p -s $(TARGET) $(INSTALLPATH)/$(INSTALLNAME)
 
 clean:
 	$(RM) $(OBJS) $(RESOBJS) exports.$(OBJ) bkshhdr.lib bkshhdr.res
@@ -88,7 +89,7 @@ release: $(TARGET)
 	mkdir -p $(RELEASE_DIR)
 	mkdir -p $(RELEASE_DIR)/src
 	mkdir -p $(RELEASE_DIR)/src/PlugInSDK
-	install -p -s $(TARGET) $(RELEASE_DIR)
+	$(INSTALL) -p -s $(TARGET) $(RELEASE_DIR)
 	$(CP) bkshhdr.txt $(RELEASE_DIR)
 	$(CP) *.c* *.h *.def *.rc Makefile bkshhdr.doxygen $(RELEASE_DIR)/src
 	$(CP) PlugInSDK/*.* $(RELEASE_DIR)/src/PlugInSDK

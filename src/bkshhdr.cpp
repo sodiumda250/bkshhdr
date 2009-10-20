@@ -1,8 +1,8 @@
 /*
- * $Id: bkshhdr.cpp,v 1.24 2005/04/26 05:32:45 woods Exp $
+ * $Id: bkshhdr.cpp,v 1.25 2005/05/10 08:48:32 woods Exp $
  */
 
-static char id[] = "$Id: bkshhdr.cpp,v 1.24 2005/04/26 05:32:45 woods Exp $";
+static char id[] = "$Id: bkshhdr.cpp,v 1.25 2005/05/10 08:48:32 woods Exp $";
 
 #include <windows.h>
 #include "bkshhdr.h"
@@ -97,7 +97,6 @@ DLLEXPORT int WINAPI BKC_OnExit()
 {
     // Return -1 if you don't want to quit.
     SaveWindowPos(szIni);
-    unhookMailWindow();
     return 0;
 }
 

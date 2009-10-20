@@ -1,8 +1,8 @@
 /*
- * $Id: hdrwin.cpp,v 1.73 2005/04/26 05:14:27 woods Exp $
+ * $Id: hdrwin.cpp,v 1.76 2005/05/25 03:55:21 woods Exp $
  */
 
-static char id[] = "$Id: hdrwin.cpp,v 1.73 2005/04/26 05:14:27 woods Exp $";
+static char id[] = "$Id: hdrwin.cpp,v 1.76 2005/05/25 03:55:21 woods Exp $";
 
 #include <windows.h>
 #include <commctrl.h>
@@ -35,19 +35,26 @@ static ATOM MyRegisterClass(HINSTANCE hInstance);
 static LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 }
 
-static int GetHeaderIndex(HWND hwnd);
-
 static void Redraw(void);
-static LRESULT STDCALL OnChar(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnMove(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnMouseMove(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnActivate(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnLButtonDown(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnLButtonUp(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnLButtonDblClk(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnNCLButtonDblClk(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-static LRESULT STDCALL OnKillFocus(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+
+/**
+ * @brief ウィンドウ定義構造体インスタンス取得
+ * @param hwnd インスタンスを取得するウィンドウハンドル
+ * @return ウィンドウ定義構造体インスタンス
+ *
+ * ウィンドウハンドルからウィンドウ定義構造体のインスタンスを取得する。
+ */
+headerWindow& headerWindow::getWindow(const HWND hwnd)
+{
+    int i;
+
+    for (i = 0; i < windowNum; i++) {
+        if (hwnd == window[i].hwnd()) {
+            return window[i];
+        }
+    }
+    return window[i];
+}
 
 /**
  * @brief ヘッダ表示ウィンドウ情報の初期化
@@ -212,9 +219,22 @@ void headerWindow::ShowHeader(LPCTSTR lpMailID)
 void ShowWindow(void)
 {
     int i;
+    WINDOWPLACEMENT wplace;
+    HWND hMain, hTree, hList, hView;
 
-    for (i = windowNum - 1; i >= 0; i--) {
-        window[i].ShowWindow();
+    bka.GetWindowHandles(&hMain, &hTree, &hList, &hView);
+
+    wplace.length = sizeof(WINDOWPLACEMENT);
+    wplace.showCmd = SW_SHOWNORMAL;
+    ::GetWindowPlacement(hMain, &wplace);
+    if (wplace.showCmd != SW_SHOWMAXIMIZED) {
+        for (i = windowNum - 1; i >= 0; i--) {
+            window[i].ShowWindow();
+        }
+    } else {
+        for (i = windowNum - 1; i >= 0; i--) {
+            window[i].HideWindow();
+        }
     }
 }
 
@@ -364,6 +384,9 @@ static LRESULT CALLBACK
 WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     int wmId, wmEvent;
+    LRESULT ret = 0;
+
+    headerWindow& hw = headerWindow::getWindow(hWnd);
 
     switch (message) {
     case WM_COMMAND:
@@ -373,112 +396,103 @@ WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wmId) {
         case IDM_COPY:
         case IDM_CUT:
-            window[GetHeaderIndex(hWnd)].SetClipBoardText();
+            hw.SetClipBoardText();
             break;
         default:
             return DefWindowProc(hWnd, message, wParam, lParam);
         }
         break;
     case WM_CHAR:
-        OnChar(hWnd, message, wParam, lParam);
+        ret = hw.OnChar(wParam, lParam);
         break;
     case WM_PAINT:
-        OnPaint(hWnd, message, wParam, lParam);
+        ret = hw.OnPaint(wParam, lParam);
         break;
     case WM_SIZE:
     case WM_MOVE:
         // ウィンドウの大きさ、位置をセーブする。
-        OnMove(hWnd, message, wParam, lParam);
+        ret = hw.OnMove(wParam, lParam);
         break;
     case WM_ACTIVATE:
-        OnActivate(hWnd, message, wParam, lParam);
+        ret = hw.OnActivate(wParam, lParam);
         break;
     case WM_DESTROY:
         //PostQuitMessage( 0 );
         break;
     case WM_LBUTTONDOWN:
-        OnLButtonDown(hWnd, message, wParam, lParam);
+        ret = hw.OnLButtonDown(wParam, lParam);
         break;
     case WM_LBUTTONUP:
-        OnLButtonUp(hWnd, message, wParam, lParam);
+        ret = hw.OnLButtonUp(wParam, lParam);
         break;
     case WM_MOUSEMOVE:
-        OnMouseMove(hWnd, message, wParam, lParam);
+        ret = hw.OnMouseMove(wParam, lParam);
         break;
     case WM_LBUTTONDBLCLK:
-        OnLButtonDblClk(hWnd, message, wParam, lParam);
+        ret = hw.OnLButtonDblClk(wParam, lParam);
         break;
     case WM_NCLBUTTONDBLCLK:
-        OnNCLButtonDblClk(hWnd, message, wParam, lParam);
+        ret = hw.OnNCLButtonDblClk(wParam, lParam);
         break;
     case WM_KILLFOCUS:
-        OnKillFocus(hWnd, message, wParam, lParam);
+        ret = hw.OnKillFocus(wParam, lParam);
         break;
     default:
-        return DefWindowProc(hWnd, message, wParam, lParam);
+        return ::DefWindowProc(hWnd, message, wParam, lParam);
     }
-    return 0;
+    return ret;
 }
 
 /**
  * @brief WM_CHARイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_CHAR)
  * @param wParam : メッセージのパラメータ(character code)
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_CHARメッセージを処理する。
  * Ctrl-Cが入力されたら指定された文字列をクリップボードにコピーする。
  */
-static LRESULT STDCALL
-OnChar(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnChar(WPARAM wParam, LPARAM lParam)
 {
     if ((((TCHAR) wParam) == 'c') || (((TCHAR) wParam) == 'C')) {
-        LRESULT ret = SendMessage(hWnd, WM_GETHOTKEY, (WPARAM)0, (LPARAM)0); 
+        LRESULT ret = SendMessage(hwnd(), WM_GETHOTKEY, (WPARAM)0, (LPARAM)0); 
         if (ret & HOTKEYF_CONTROL) {
-            window[GetHeaderIndex(hWnd)].SetClipBoardText();
+            this->SetClipBoardText();
         }
     } else if (((TCHAR) wParam) == 3/* ctrl-C */) {
-        window[GetHeaderIndex(hWnd)].SetClipBoardText();
+        this->SetClipBoardText();
     }
     return 0;
 }
 
 /**
  * @brief WM_MOVE/WM_SIZEイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_MOVE/WM_SIZE)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_MOVE/WM_SIZEメッセージを処理する。
  * 移動／サイズ変更後のウィンドウ位置範囲を記録する。
  */
-static LRESULT STDCALL
-OnMove(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnMove(WPARAM wParam, LPARAM lParam)
 {
-    ::GetWindowRect(hWnd, &(window[GetHeaderIndex(hWnd)].rect()));
+    ::GetWindowRect(hwnd(), &(rect()));
 
     return 0;
 }
 
 /**
  * @brief WM_ACTIVATEイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_ACTIVATE)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_ACTIVATEメッセージを処理する。
  */
-static LRESULT STDCALL
-OnActivate(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnActivate(WPARAM wParam, LPARAM lParam)
 {
     unsigned long pid_before = 0;
     unsigned long pid_after = 0;
 
     ::GetWindowThreadProcessId((HWND)(lParam), &pid_before);
-    ::GetWindowThreadProcessId(hWnd, &pid_after);
+    ::GetWindowThreadProcessId(hwnd(), &pid_after);
 
     if (pid_before != pid_after && (BOOL)HIWORD(wParam) == false) {
         switch (LOWORD(wParam)) {
@@ -499,16 +513,13 @@ OnActivate(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
 /**
  * @brief WM_PAINTイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_PAINT)
  * @param wParam : メッセージのパラメータ(the device context to draw in)
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_PAINTメッセージを処理し、
  * ヘッダ表示ウィンドウを描画する。
  */
-static LRESULT STDCALL
-OnPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnPaint(WPARAM wParam, LPARAM lParam)
 {
     int j;
     PAINTSTRUCT ps;
@@ -517,27 +528,26 @@ OnPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     COLORREF ctextn, cbackn;
 
-    headerWindow& hw = window[GetHeaderIndex(hWnd)];
-    hdc = ::BeginPaint(hWnd, &ps);
+    hdc = ::BeginPaint(hwnd(), &ps);
     ctextn = ::GetTextColor(hdc);
     cbackn = ::GetBkColor(hdc);
     urect = ps.rcPaint;
     ::SelectObject(hdc, headerWindow::font());
-    for (j = 0; j < hw.body().length(); j++) {
-        if (hw.body(j).in_rect(urect)) {
-            if (hw.body(j).reverse() != 0) {
+    for (j = 0; j < body().length(); j++) {
+        if (body(j).in_rect(urect)) {
+            if (body(j).reverse() != 0) {
                 ::SetTextColor(hdc, cbackn);
                 ::SetBkColor(hdc, ctextn);
             } else {
                 ::SetTextColor(hdc, ctextn);
                 ::SetBkColor(hdc, cbackn);
             }
-            ::DrawText(hdc, hw.body(j).str(),
-                     hw.body(j).length(),
-                     &(hw.body(j).rect()), DT_LEFT);
+            ::DrawText(hdc, body(j).str(),
+                     body(j).length(),
+                     &(body(j).rect()), DT_LEFT);
         }
     }
-    ::EndPaint(hWnd, &ps);
+    ::EndPaint(hwnd(), &ps);
 
     return 0;
 }
@@ -552,161 +562,141 @@ OnPaint(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
  * ヘッダ表示ウィンドウのWM_LBUTTONDOWNイベントを処理する。
  * マウスクリックフラグをセットし、クリック位置を記録し、選択文字列をクリアする。
  */
-static LRESULT STDCALL
-OnLButtonDown(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnLButtonDown(WPARAM wParam, LPARAM lParam)
 {
     int j;
     RECT rect;
 
-    ::SetActiveWindow(hWnd);
-    headerWindow& hw = window[GetHeaderIndex(hWnd)];
-    hw.setclicked(1);
-    hw.setclickpoint(MAKEPOINTS(lParam));
+    ::SetActiveWindow(hwnd());
+    setclicked(1);
+    setclickpoint(MAKEPOINTS(lParam));
 
     rect.top = rect.bottom = MAKEPOINTS(lParam).y;
     rect.left = rect.right = MAKEPOINTS(lParam).x;
-    for (j = 0; j < hw.body().length(); j++) {
-        if (hw.body(j).reverse() != 0) {
-            hw.body(j).setreverse(0);
-            addrect(rect, hw.body(j).rect());
+    for (j = 0; j < body().length(); j++) {
+        if (body(j).reverse() != 0) {
+            body(j).setreverse(0);
+            addrect(rect, body(j).rect());
         }
     }
-    hw.redraw(rect);
-    ::SetCapture(hWnd);
+    redraw(rect);
+    ::SetCapture(hwnd());
 
     return 0;
 }
 
 /**
  * @brief WM_LBUTTONUPイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_LBUTTONUP)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ(mouse clicked point)
  *
  * ヘッダ表示ウィンドウのWM_LBUTTONUPイベントを処理する。
  * クリックフラグをリセットする。
  */
-static LRESULT STDCALL
-OnLButtonUp(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnLButtonUp(WPARAM wParam, LPARAM lParam)
 {
     ::ReleaseCapture();
-    window[GetHeaderIndex(hWnd)].setclicked(0);
+    setclicked(0);
 
     return 0;
 }
 
 /**
  * @brief WM_MOUSEMOVEイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_MOUSEMOVE)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ(point of mouse cursor)
  *
  * ヘッダ表示ウィンドウのWM_MOUSEMOVEイベントを処理し、
  * マウスがクリックされているときは文字列選択処理を行う。
  */
-static LRESULT STDCALL
-OnMouseMove(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnMouseMove(WPARAM wParam, LPARAM lParam)
 {
     int j;
     RECT mrect;
     RECT crect;
 
-    headerWindow& hw = window[GetHeaderIndex(hWnd)];
-    if (hw.clicked() && DragDetect(hWnd, hw.clickpoint())) {
+    if (clicked() && DragDetect(hwnd(), clickpoint())) {
         // ドラッグ時処理
-        mrect.left = (MAKEPOINTS(lParam).x < hw.clickpoint().x) ?
-                         MAKEPOINTS(lParam).x : hw.clickpoint().x;
-        mrect.right = (MAKEPOINTS(lParam).x > hw.clickpoint().x) ?
-                         MAKEPOINTS(lParam).x : hw.clickpoint().x;
-        mrect.top = (MAKEPOINTS(lParam).y < hw.clickpoint().y) ?
-                         MAKEPOINTS(lParam).y : hw.clickpoint().y;
-        mrect.bottom = (MAKEPOINTS(lParam).y > hw.clickpoint().y) ?
-                         MAKEPOINTS(lParam).y : hw.clickpoint().y;
+        mrect.left = (MAKEPOINTS(lParam).x < clickpoint().x) ?
+                         MAKEPOINTS(lParam).x : clickpoint().x;
+        mrect.right = (MAKEPOINTS(lParam).x > clickpoint().x) ?
+                         MAKEPOINTS(lParam).x : clickpoint().x;
+        mrect.top = (MAKEPOINTS(lParam).y < clickpoint().y) ?
+                         MAKEPOINTS(lParam).y : clickpoint().y;
+        mrect.bottom = (MAKEPOINTS(lParam).y > clickpoint().y) ?
+                         MAKEPOINTS(lParam).y : clickpoint().y;
         crect = mrect;
 
-        for (j = 0; j < hw.body().length(); j++) {
-            if (hw.body(j).in_rect(mrect)) {
-                if (hw.body(j).reverse() == 0) {
-                    hw.body(j).setreverse(1);
-                    addrect(crect, hw.body(j).rect());
+        for (j = 0; j < body().length(); j++) {
+            if (body(j).in_rect(mrect)) {
+                if (body(j).reverse() == 0) {
+                    body(j).setreverse(1);
+                    addrect(crect, body(j).rect());
                 }
             } else {
-                if (hw.body(j).reverse() != 0) {
-                    hw.body(j).setreverse(0);
-                    addrect(crect, hw.body(j).rect());
+                if (body(j).reverse() != 0) {
+                    body(j).setreverse(0);
+                    addrect(crect, body(j).rect());
                 }
             }
         }
-        hw.redraw(crect);
+        redraw(crect);
     }
     return 0;
 }
 
 /**
  * @brief WM_LBUTTONDBLCLKイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_LBUTTONDBLCLK)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_LBUTTONDBLCLKイベントを処理し、
  * 全文字を選択状態にする。
  */
-static LRESULT STDCALL
-OnLButtonDblClk(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnLButtonDblClk(WPARAM wParam, LPARAM lParam)
 {
     int j;
 
-    headerWindow& hw = window[GetHeaderIndex(hWnd)];
-    for (j = 0; j < hw.body().length(); j++) {
-        hw.body(j).setreverse(1);
+    for (j = 0; j < body().length(); j++) {
+        body(j).setreverse(1);
     }
-    hw.redraw();
+    redraw();
 
     return 0;
 }
 
 /**
  * @brief WM_NCLBUTTONDBLCLKイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_NCLBUTTONDBLCLK)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_NCLBUTTONDBLCLKイベントを処理し、
  * ウィンドウの大きさを調整する。
  */
-static LRESULT STDCALL
-OnNCLButtonDblClk(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnNCLButtonDblClk(WPARAM wParam, LPARAM lParam)
 {
-    window[GetHeaderIndex(hWnd)].AdjustWindow();
+    AdjustWindow();
 
     return 0;
 }
 
 /**
  * @brief WM_KILLFOCUSイベント処理
- * @param hWnd : ウィンドウハンドル
- * @param message : メッセージ(WM_KILLFOCUS)
  * @param wParam : メッセージのパラメータ
  * @param lParam : メッセージのパラメータ
  *
  * ヘッダ表示ウィンドウのWM_KILLFOCUSイベントを処理し、
  * 文字の選択状態を解除する。
  */
-static LRESULT STDCALL
-OnKillFocus(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
+LRESULT headerWindow::OnKillFocus(WPARAM wParam, LPARAM lParam)
 {
     int j;
 
     ::ReleaseCapture();
-    headerWindow& hw = window[GetHeaderIndex(hWnd)];
-    for (j = 0; j < hw.body().length(); j++) {
-        hw.body(j).setreverse(0);
+    for (j = 0; j < body().length(); j++) {
+        body(j).setreverse(0);
     }
-    hw.redraw();
+    redraw();
 
     return 0;
 }
@@ -829,25 +819,6 @@ BOOL SaveFont(LOGFONT *lf, const char *szIni)
     headerWindow::setFont(lf);
     Redraw();
     return TRUE;
-}
-
-/**
- * @brief ウィンドウ定義構造体インデックス取得
- * @param hwnd インデックスを取得するウィンドウのウィンドウハンドル
- * @return ウィンドウ定義構造体のインデックス
- *
- * ウィンドウハンドルからウィンドウ定義構造体のインデックスを取得する。
- */
-static int GetHeaderIndex(HWND hwnd)
-{
-    int i;
-
-    for (i = 0; i < windowNum; i++) {
-        if (hwnd == window[i].hwnd()) {
-            return i;
-        }
-    }
-    return -1;
 }
 
 /**

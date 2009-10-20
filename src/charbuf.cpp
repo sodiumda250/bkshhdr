@@ -1,8 +1,8 @@
 /*
- * $Id: charbuf.cpp,v 1.29.2.1 2005/05/09 08:34:48 woods Exp $
+ * $Id: charbuf.cpp,v 1.30 2005/05/09 08:32:57 woods Exp $
  */
 
-static char id[] = "$Id: charbuf.cpp,v 1.29.2.1 2005/05/09 08:34:48 woods Exp $";
+static char id[] = "$Id: charbuf.cpp,v 1.30 2005/05/09 08:32:57 woods Exp $";
 
 #include <stddef.h>
 #include <stdio.h>

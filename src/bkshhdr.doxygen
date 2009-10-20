@@ -1,5 +1,5 @@
 # Doxyfile 1.2.18
-# $Id: bkshhdr.doxygen,v 1.5 2005/04/21 04:47:57 woods Exp $
+# $Id: bkshhdr.doxygen,v 1.6 2005/05/30 01:48:49 woods Exp $
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project
@@ -140,7 +140,7 @@ INTERNAL_DOCS          = NO
 # doxygen to hide any special comment blocks from generated source code 
 # fragments. Normal C and C++ comments will always remain visible.
 
-STRIP_CODE_COMMENTS    = YES
+STRIP_CODE_COMMENTS    = NO
 
 # If the CASE_SENSE_NAMES tag is set to NO then Doxygen will only generate 
 # file names in lower case letters. If set to YES upper case letters are also 

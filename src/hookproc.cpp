@@ -1,8 +1,8 @@
 /*
- * $Id: hookproc.cpp,v 1.4 2005/04/26 05:29:09 woods Exp $
+ * $Id: hookproc.cpp,v 1.5 2005/05/25 03:55:21 woods Exp $
  */
 
-static char id[] = "$Id: hookproc.cpp,v 1.4 2005/04/26 05:29:09 woods Exp $";
+static char id[] = "$Id: hookproc.cpp,v 1.5 2005/05/25 03:55:21 woods Exp $";
 
 #include <stdio.h>
 #include <windows.h>
@@ -77,6 +77,13 @@ static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM l
             default:
                break;
             }
+        }
+        break;
+    case WM_SIZE:
+        if (wParam == SIZE_MAXIMIZED) {
+            HideWindow();
+        } else if (wParam == SIZE_RESTORED) {
+            ShowWindow();
         }
         break;
     default:

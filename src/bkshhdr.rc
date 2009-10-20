@@ -1,4 +1,4 @@
-// $Id: bkshhdr.rc,v 1.13 2005/04/22 03:00:01 woods Exp $
+// $Id: bkshhdr.rc,v 1.14 2005/05/09 10:29:20 woods Exp $
 //Microsoft Developer Studio generated resource script.
 //
 #include "resource.h"
@@ -166,12 +166,12 @@ BEGIN
         BLOCK "041103A4"
         BEGIN
             // VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "BkShhdr\0"
+            VALUE "FileDescription", "ヘッダの内容を別ウィンドウで表示します\0"
             VALUE "FileVersion", RELEASE_VERSION
-            VALUE "InternalName", "BkShhdr\0"
+            VALUE "InternalName", "BkShHdr\0"
             VALUE "LegalCopyright", COPYRIGHT
             // VALUE "LegalTrademarks", "\0"
-            VALUE "ProductName", "BkShhdr\0"
+            VALUE "ProductName", "BkShHdr\0"
             VALUE "ProductVersion", RELEASE_VERSION
         END
     END
@@ -180,12 +180,12 @@ BEGIN
         BLOCK "04090000"
         BEGIN
             // VALUE "CompanyName", "\0"
-            VALUE "FileDescription", "BkShhdr\0"
+            VALUE "FileDescription", "display mail header with other window\0"
             VALUE "FileVersion", RELEASE_VERSION
-            VALUE "InternalName", "BkShhdr\0"
+            VALUE "InternalName", "BkShHdr\0"
             VALUE "LegalCopyright", COPYRIGHT
             // VALUE "LegalTrademarks", "\0"
-            VALUE "ProductName", "BkShhdr\0"
+            VALUE "ProductName", "BkShHdr\0"
             VALUE "ProductVersion", RELEASE_VERSION
         END
     END
