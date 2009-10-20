@@ -1,8 +1,8 @@
 /*
- * $Id: charbuf.cpp,v 1.29 2005/04/26 05:29:09 woods Exp $
+ * $Id: charbuf.cpp,v 1.29.2.1 2005/05/09 08:34:48 woods Exp $
  */
 
-static char id[] = "$Id: charbuf.cpp,v 1.29 2005/04/26 05:29:09 woods Exp $";
+static char id[] = "$Id: charbuf.cpp,v 1.29.2.1 2005/05/09 08:34:48 woods Exp $";
 
 #include <stddef.h>
 #include <stdio.h>
@@ -166,6 +166,7 @@ void rectstr::setrect(HDC hdc, POINT& pt)
  * @return 文字数
  *
  * ダブルバイト文字を含む文字列の文字数を返却する。
+ * 但し、"\r\n"は1文字として数える。
  */
 static int strlenDBCS(const char *str)
 {
@@ -176,6 +177,13 @@ static int strlenDBCS(const char *str)
             str++;
             if (*str == 0) {
                 break;
+            }
+        } else if (*str == '\r') {
+            str++;
+            if (*str == 0) {
+                break;
+            } else if (*str != '\n') {
+                str--;
             }
         }
         len++;

@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
-# $Id: Makefile,v 1.49 2005/04/26 10:37:09 woods Exp $
+# $Id: Makefile,v 1.49.2.3 2005/05/30 03:56:01 woods Exp $
 
 MAJOR = 0
 MINOR = 8
-TEENY = 0
+TEENY = 1
 
 COPYRIGHT = '"Copyright (C) 2000-2005 woods"'
 
@@ -32,6 +32,7 @@ MKDIR = mkdir -p
 ZIP = zip
 LHA = lha
 TOUCH = touch
+FIND = find
 
 # Compile and Link option
 CFLAGS = -g -O -Wall -pipe -mno-cygwin -I/usr/inlcude/w32api \
@@ -79,7 +80,7 @@ debug: install
 
 cleanall: clean
 	if [ -d test ]; then (cd test; $(MAKE) cleanall); fi
-	if [ -d test ]; then (cd exe; $(MAKE) cleanall); fi
+	if [ -d exe ]; then (cd exe; $(MAKE) cleanall); fi
 	$(RM) $(TARGET) bkshhdr$(RELEASE_VERSION).lzh bkshhdr$(RELEASE_VERSION).zip tags release $(RELEASE_DIR)
 	$(RM) -r $(DOCDIR)
 
@@ -91,6 +92,7 @@ release: $(TARGET)
 	$(CP) bkshhdr.txt $(RELEASE_DIR)
 	$(CP) *.c* *.h *.def *.rc Makefile bkshhdr.doxygen $(RELEASE_DIR)/src
 	$(CP) PlugInSDK/*.* $(RELEASE_DIR)/src/PlugInSDK
+	$(FIND) $(RELEASE_DIR) -name '*.$(OBJ)' -exec $(RM) -f {} \;
 	$(ZIP) -9 -v -r bkshhdr$(RELEASE_VERSION).zip $(RELEASE_DIR)
 	$(LHA) av bkshhdr$(RELEASE_VERSION).lzh $(RELEASE_DIR)
 	$(RM) bkshhdr$(RELEASE_VERSION).bak
