@@ -1,0 +1,209 @@
+// $Id: bkshhdr.rc,v 1.13 2005/04/22 03:00:01 woods Exp $
+//Microsoft Developer Studio generated resource script.
+//
+#include "resource.h"
+
+#define APSTUDIO_READONLY_SYMBOLS
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 2 resource.
+//
+#define APSTUDIO_HIDDEN_SYMBOLS
+#include "windows.h"
+#undef APSTUDIO_HIDDEN_SYMBOLS
+#include "resource.h"
+
+/////////////////////////////////////////////////////////////////////////////
+#undef APSTUDIO_READONLY_SYMBOLS
+
+/////////////////////////////////////////////////////////////////////////////
+// 日本語 resources
+
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+#pragma code_page(932)
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Icon
+//
+
+// Icon with lowest ID value placed first to ensure application icon
+// remains consistent on all systems.
+//IDI_BKSHHDR             ICON    DISCARDABLE     "bkshhdr.ICO"
+//IDI_SMALL               ICON    DISCARDABLE     "small.ICO"
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Accelerator
+//
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_ABOUTBOX DIALOG DISCARDABLE  22, 17, 230, 41
+STYLE DS_MODALFRAME | WS_CAPTION | WS_SYSMENU
+CAPTION "Version Information"
+FONT 8, "System"
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+BEGIN
+    LTEXT           VERSION_STR, IDC_STATIC,49,10,119,8,SS_NOPREFIX
+    LTEXT           COPYRIGHT ,IDC_STATIC,49,20,119,8
+    DEFPUSHBUTTON   "OK",IDOK,195,6,30,11,WS_GROUP
+END
+
+IDD_SETTING DIALOG DISCARDABLE  0, 0, 215, 107
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "ヘッダ表示設定"
+FONT 8, "System"
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+BEGIN
+    LTEXT           "表示ヘッダ名をカンマ区切りで指定してください",
+                    IDC_HEADERSCAPTION,7,7,200,12
+    EDITTEXT        IDC_HEADERS,7,22,200,13,ES_AUTOHSCROLL
+    CONTROL         "ウィンドウの大きさを自動調節する",
+                        IDC_ADJUSTWINDOW, "Button",
+                        BS_AUTOCHECKBOX | WS_TABSTOP,7,44,200,13
+    PUSHBUTTON      "フォント選択",IDC_FONT,7,66,55,14
+    PUSHBUTTON      "About",IDC_ABOUT,7,88,55,14
+    DEFPUSHBUTTON   "OK",IDOK,153,66,55,14
+    PUSHBUTTON      "キャンセル",IDCANCEL,153,88,55,14
+END
+
+IDD_SETTING DIALOG DISCARDABLE  0, 0, 215, 87
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Setting Dialog"
+FONT 8, "System"
+LANGUAGE LANG_ENGLISH, SUBLANG_DEFAULT
+BEGIN
+    LTEXT           "Set Header name with comma separeted(without blank)",
+                    IDC_HEADERSCAPTION,7,7,190,12
+    EDITTEXT        IDC_HEADERS,7,22,201,13,ES_AUTOHSCROLL
+    PUSHBUTTON      "Select Font",IDC_FONT,7,44,49,14
+    PUSHBUTTON      "About",IDC_ABOUT,7,66,49,14
+    DEFPUSHBUTTON   "OK",IDOK,158,44,50,14
+    PUSHBUTTON      "Cancel",IDCANCEL,158,66,50,14
+END
+
+#ifdef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// TEXTINCLUDE
+//
+
+2 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "#define APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""windows.h""\r\n"
+    "#undef APSTUDIO_HIDDEN_SYMBOLS\r\n"
+    "#include ""resource.h""\r\n"
+    "\0"
+END
+
+3 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "\r\n"
+    "\0"
+END
+
+1 TEXTINCLUDE DISCARDABLE 
+BEGIN
+    "resource.h\0"
+END
+
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO DISCARDABLE 
+BEGIN
+    IDD_SETTING, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 208
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 80
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE DISCARDABLE 
+LANGUAGE LANG_JAPANESE, SUBLANG_DEFAULT
+BEGIN
+    IDS_SHHDR	    "BkShHdr"
+    IDS_COPYDONE    "クリップボードにコピーしました"
+    IDS_PLUGINNAME  "ヘッダ表示プラグイン"
+    IDS_VENDOR      "woods"
+    IDS_VERSION     VERSION_STR
+    IDS_DESCRIPTION "ヘッダの内容を別ウィンドウで表示します"
+END
+
+/////////////////////////////////////////////////////////////////////////////
+
+VS_VERSION_INFO VERSIONINFO 
+  FILEVERSION	MAJOR,MINOR,TEENY,0
+  PRODUCTVERSION	MAJOR,MINOR,TEENY,0
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041103A4"
+        BEGIN
+            // VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "BkShhdr\0"
+            VALUE "FileVersion", RELEASE_VERSION
+            VALUE "InternalName", "BkShhdr\0"
+            VALUE "LegalCopyright", COPYRIGHT
+            // VALUE "LegalTrademarks", "\0"
+            VALUE "ProductName", "BkShhdr\0"
+            VALUE "ProductVersion", RELEASE_VERSION
+        END
+    END
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "04090000"
+        BEGIN
+            // VALUE "CompanyName", "\0"
+            VALUE "FileDescription", "BkShhdr\0"
+            VALUE "FileVersion", RELEASE_VERSION
+            VALUE "InternalName", "BkShhdr\0"
+            VALUE "LegalCopyright", COPYRIGHT
+            // VALUE "LegalTrademarks", "\0"
+            VALUE "ProductName", "BkShhdr\0"
+            VALUE "ProductVersion", RELEASE_VERSION
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0411, 932
+    END
+END
+
+
+
+#ifndef APSTUDIO_INVOKED
+/////////////////////////////////////////////////////////////////////////////
+//
+// Generated from the TEXTINCLUDE 3 resource.
+//
+
+
+/////////////////////////////////////////////////////////////////////////////
+#endif    // not APSTUDIO_INVOKED
+

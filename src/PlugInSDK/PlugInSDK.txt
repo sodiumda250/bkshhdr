@@ -1,0 +1,1629 @@
+Becky! Plug-in SDK
+
+1 Introduction
+
+1.1 What's the plug-in
+
+Becky! Plug-in is a DLL program which is loaded when Becky! is started.
+It will receive callback notification on particular events, and control
+Becky! by using Becky! APIs.
+Plug-in modules must be placed in one of the following directory so
+that Becky! will detect and load them on the startup time.
+
+[Becky!'s program directory]\PlugIns\
+[Becky!'s data directory]\PlugIns\
+
+e.g.
+C:\Program Files\RimArts\B2\PlugIns\
+C:\Becky!\Carty\PlugIns\
+
+If you are going to develop Becky!'s plug-in, the easiest way is to copy
+"Template.cpp" into your project. You may also want to look into "BkPGP"
+project as a complete sample plug-in.
+
+
+When you distribute your plug-in, it is strongly recommended that all
+the related files have same file name with different file extensions.
+
+e.g.
+MyPlugIn.dll
+MyPlugIn.ini
+MyPlugIn.txt
+MyPlugIn-Readme.txt
+
+Since PlugIns folder may contain a lot of different plug-ins, this makes
+finding related files easier for users. 
+Avoid using some common names, like "Readme.txt".
+
+Or if your plug-in has a lot of related files, it is also recommended to
+make your install program to create a sub folder under the PlugIns
+folder and store all the related files, except the plug-in dll, in the
+sub folder.
+
+e.g.
+MyPlugIn.dll
+MyPlugIn\
+  Readme.txt
+  Manual.html
+  Image1.jpg
+  Image2.jpg
+  Datafile.dat
+
+Note that the plug-in dll, which Becky! loads, must be located in the
+PlugIns folder, not a sub folder.
+
+
+1.2 Becky! API
+
+Becky!'s APIs are the set of functions exported by Becky!'s executable.
+In this SDK, they are implemented in a C++ class named CBeckyAPI, of
+which you can have only one instance in one plug-in module.
+You can also implement various API interfaces for other programming
+languages if you like. To do that, load "B2.exe" with LoadLibrary
+and use GetProcAddress to get the addresses of API functions. Refer
+"BeckyAPI.h" and "BeckyAPI.cpp" files to see what functions are exported.
+
+
+1.3 Callbacks
+
+On the other hand, a plug-in module must export callback functions which
+you want Becky! to call on particular events.
+For example, if you want Becky! to call your plug-in when Becky! is
+started, you have to implement "int WINAPI BKC_OnStart();"and export it
+in the "def" file.
+All the callback functions are defined in "Template.def" file, so you
+can simply copy it into your project to save your time.
+
+** IMPORTANT **
+You MUST implement BKC_OnPlugInInfo and MUST fill at least szPlugInName
+and szVendor member of BKPLUGININFO so that users will get information
+about your plug-in when it is loaded for the first time.
+Otherwise Becky! will silently ignore your plug-in even if it is
+properly installed.
+
+
+1.4 Security Consideration
+
+DO NOT ASSUME the length of any string data in e-mail messages.
+
+For example, you might assume that the length of entire e-mail header
+would be at most 64k bytes. But if you copy the data to a fixed 64k
+buffer using strcpy() C function, which doesn't check the upper bound of
+a buffer, THAT CAN BE A "BUFFER OVERRUN" SECURITY HOLE.
+Malicious people can take control of users' computer using this security
+flaw in your program.
+
+****** BAD EXAMPLE ******
+
+char szBuf[65536];
+LPSTR lpHeader = GetHeader(NULL);
+strcpy(szBuf, lpHeader); // <-- SECURITY HOLE!!
+
+**** BAD EXAMPLE END ****
+
+You MUST always check the length of the source data first, and use a
+function, which checks the upper bound of data, like strncpy(), so that
+the exceeded data will be truncated.
+It is also recommended that you use a dynamically allocated buffer, like
+the one that is returned by CBeckyAPI::Alloc() API.
+
+***** GOOD EXAMPLE 1 *****
+
+char szBuf[65536];
+LPSTR lpHeader = bka.GetHeader(NULL);
+strncpy(szBuf, lpHeader, 65535);
+szBuf[65535] = '\0';
+
+***** GOOD EXAMPLE 2 *****
+
+LPSTR lpHeader = bka.GetHeader(NULL);
+LPSTR lpBuf = (LPSTR)bka.Alloc(strlen(lpHeader) + 1);
+if (lpBuf) {
+    strcpy(lpBuf, lpHeader);
+}
+
+**** GOOD EXAMPLE END ****
+
+In any case, there is no "sufficient" buffer size you can assume. Always
+check the length of the source data first. Then either truncate exceeded
+data, or prepare a buffer that can completely accommodate entire data.
+
+
+2 References
+
+2.1 Callback functions
+
+////////////////////////////////////////////////////////////////////////
+// Called when the program is started and the main window is created.
+    int WINAPI BKC_OnStart()
+    {
+        /*
+        Since BKC_OnStart is called after Becky!'s main window is
+        created, at least BKC_OnMenuInit with BKC_MENU_MAIN is called
+        before BKC_OnStart. So, do not assume BKC_OnStart is called
+        prior to any other callback.
+        */
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when the main window is closing.
+    int WINAPI BKC_OnExit()
+    {
+        /*
+        Note that it is NOT guaranteed that BKC_OnExit is the last
+        called callback. You should not free any of your objects, which
+        can be used in other callbacks.
+        */
+        // Return -1 if you don't want to quit.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when menu is initialized.
+// If you want to add your plug-in's menu to Becky!, implement this
+// callback.
+    int WINAPI BKC_OnMenuInit(HWND hWnd, HMENU hMenu, int nType)
+    {
+        /*
+        hWnd: A window handle of the window which owns the menu
+        hMenu: A menu handle
+        nType: A type of the menu. see below.
+        */
+        switch (nType) {
+        case BKC_MENU_MAIN: // Menu bar of the main window
+            {
+                /* Adding menu items
+                HMENU hSubMenu = GetSubMenu(hMenu, 4);
+                // Call API function to register your command.
+                // Define CmdProc as "void WINAPI CmdProc(HWND, LPARAM)"
+                UINT nID = bka.RegisterCommand("Information
+                           about this Command", nType, CmdProc);
+                AppendMenu(hSubMenu, MF_STRING, nID, "&Menu item");
+                */
+                
+                /* If needed, you can register the command UI update callback.
+                // Define CmdUIProc as "UINT WINAPI CmdUIProc(HWND, LPARAM)"
+                bka.RegisterUICallback(nID, CmdUIProc);
+                */
+
+            }
+            break;
+        case BKC_MENU_LISTVIEW: // Context menu of ListView window
+            break;
+        case BKC_MENU_TREEVIEW: // Context menu of TreeView window
+            break;
+        case BKC_MENU_MSGVIEW: // Context menu of message view Window
+            break;
+        case BKC_MENU_MSGEDIT: // Context menu of message view Window when it's editable
+            break;
+        case BKC_MENU_TASKTRAY: // Popup menu of the task tray icon
+            break;
+        case BKC_MENU_COMPOSE: // Menu bar of the composing window
+            break;
+        case BKC_MENU_COMPEDIT: // Context menu of the editor of the composing window.
+            break;
+        case BKC_MENU_COMPREF: // Context menu of the reference view of the composing window
+            break;
+        default:
+            break;
+        }
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when a folder is opened.
+    int WINAPI BKC_OnOpenFolder(LPCSTR lpFolderID)
+    {
+        /*
+        lpFolderID represents an ID of the folder which is opening.
+        The folder ID is a part of an actual folder directory path.
+        e.g. "1234abcd\!!!!Inbox\".
+        You can pass those folder IDs to some API functions.
+        If the folder ID ends with ".ini" (case insensitive), you can
+        assume it is an IMAP4 remote folder.
+        */
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when a mail is selected.
+    int WINAPI BKC_OnOpenMail(LPCSTR lpMailID)
+    {
+        /*
+         lpMailID represents an ID of the mail which is opening.
+         The message ID is a folder ID + "?" + an unique hexadecimal identifier.
+         e.g. "1234abcd\!!!!Inbox\?5678cdef".
+         You can pass those IDs to some API functions.
+        */
+
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called every minute.
+    int WINAPI BKC_OnEveryMinute()
+    {
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when a compose windows is opened.
+    int WINAPI BKC_OnOpenCompose(HWND hWnd, int nMode)
+    {
+        /*
+         hWnd: A window handle of the composing window.
+         nMode: The mode of the composing window.
+            COMPOSE_MODE_COMPOSE1   Compose new message.
+            COMPOSE_MODE_COMPOSE2   Compose to replying address.
+            COMPOSE_MODE_COMPOSE3   Compose to selected addresses.
+            COMPOSE_MODE_TEMPLATE   Edit/Create a template.
+            COMPOSE_MODE_REPLY1 Reply
+            COMPOSE_MODE_REPLY2 Reply to All
+            COMPOSE_MODE_REPLY3 Reply to selected addresses.
+            COMPOSE_MODE_FORWARD1   Forward.
+            COMPOSE_MODE_FORWARD2   Redirect.
+            COMPOSE_MODE_FORWARD3   Forward as attachments.
+        */
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when the composing message is saved.
+    int WINAPI BKC_OnOutgoing(HWND hWnd, int nMode) 
+    {
+        /*
+        hWnd: A window handle of the composing window.
+        nMode: How it will be processed:
+            0: Save to outbox.
+            1: Save to draft box.
+            2: Save as a reminder.
+        */
+        // Return -1 if you want to cancel the operation.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when a key is pressed.
+    int WINAPI BKC_OnKeyDispatch(HWND hWnd, int nKey, int nShift)
+    {
+        /*
+        hWnd: A window handle of the target window in which the key will be processed.
+            or NULL for the main window.
+        nKey: Windows virtual key code defined in <windows.h>
+        nShift: Shift state
+            0x40 = Shift+
+            0x20 = Ctrl+
+            0x60 = Shift+Ctrl+
+            0xfe = Alt+
+        */
+
+        // Return TRUE if you want to suppress subsequent command associated to this key.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when a message is retrieved and saved to a folder
+    int WINAPI BKC_OnRetrieve(LPCSTR lpMessage, LPCSTR lpMailID)
+    {
+        /*
+        lpMessage: A complete message source, which ends with
+        "<CRLF>.<CRLF>".
+        lpMailID: Mail ID of the new mail.
+        */
+        // Always return 0.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when a message is about to be sent
+    int WINAPI BKC_OnSend(LPCSTR lpMessage)
+    {
+        /*
+        lpMessage: A complete mail source, which ends with extra CRLF.
+        */
+        // Return BKC_ONSEND_PROCESSED, if you have processed this message
+        // and don't need Becky! to send it.
+        // Becky! will move this message to Sent box when the sending
+        // operation is done.
+        // CAUTION: You are responsible for the destination of this
+        // message if you return BKC_ONSEND_PROCESSED.
+
+        // Return BKC_ONSEND_ERROR, if you want to cancel the sending operation.
+        // You are responsible for displaying an error message.
+
+        // Return 0 to proceed the sending operation.
+        return 0;
+    }
+
+////////////////////////////////////////////////////////////////////////
+// Called when all messages are retrieved in a session.
+    int WINAPI BKC_OnFinishRetrieve(int nNumber)
+    {
+        /*
+        nNumber: Number of retrieved messages.
+        */
+        // Always return 0.
+        return 0;
+    }
+
+
+////////////////////////////////////////////////////////////////////////
+// Called when plug-in setup is needed.
+    int WINAPI BKC_OnPlugInSetup(HWND hWnd)
+    {
+        // Return nonzero if you have processed.
+        // return 1;
+        return 0;
+    }
+
+
+////////////////////////////////////////////////////////////////////////
+// Called when plug-in information is being retrieved.
+// Note: You should not call any functions of Becky! API in this callback.
+//       Some API functions can cause GPF.
+    typedef struct tagBKPLUGININFO
+    {
+        char szPlugInName[80]; // Name of the plug-in
+        char szVendor[80]; // Name of the vendor
+        char szVersion[80]; // Version string
+        char szDescription[256]; // Short description about this plugin
+    } BKPLUGININFO, *LPBKPLUGININFO;
+    
+    int WINAPI BKC_OnPlugInInfo(LPBKPLUGININFO lpPlugInInfo)
+    {
+        /* You MUST specify at least szPlugInName and szVendor.
+           otherwise Becky! will silently ignore your plug-in.
+        strcpy(lpPlugInInfo->szPlugInName, "Becky! PGP plug-in");
+        strcpy(lpPlugInInfo->szVendor, "RimArts, Inc.");
+        strcpy(lpPlugInInfo->szVersion, "1.0");
+        strcpy(lpPlugInInfo->szDescription, "Enables Becky! to use PGP.");
+        */
+        // Always return 0.
+        return 0;
+    }
+
+
+////////////////////////////////////////////////////////////////////////
+// Called when drag and drop operation occurs.
+    int WINAPI BKC_OnDragDrop(LPCSTR lpTgt, LPCSTR lpSrc, int nCount,
+                              int dropEffect)
+    {
+        /*
+        lpTgt:  A folder ID of the target folder.
+                You can assume it is a root mailbox, if the string
+                contains only one '\' character.
+        lpSrc:  Either a folder ID or mail IDs. Multiple mail IDs are
+                separated by '\n' (0x0a).
+                You can assume it is a folder ID, if the string
+                doesn't contain '?' character.
+        nCount  Number of items to be dropped.
+                It can be more than one, if you drop mail items.
+        dropEffect: Type of drag and drop operation
+                1: Copy
+                2: Move
+                4: Link (Used for filtering setup in Becky!)
+        */
+        // If you want to cancel the default drag and drop action,
+        // return -1;
+        // Do not assume the default action (copy, move, etc.) is always
+        // processed, because other plug-ins might cancel the operation.
+        return 0;
+    }
+
+
+////////////////////////////////////////////////////////////////////////
+// Called when certain image resources are requested.
+// You don't have to export this callback for regular plug-ins.
+// If more than one plug-ins respond this callback, the first response will be used.
+// If more than one plug-ins respond this callback, the first response will be used.
+// So, the author should inform the users that they might need to disable some other resource
+// plug-ins in "General Setup" > "Advanced" > "Plug-Ins".
+// It is strongly recommended that you add "_b2icon_" prefix to your plug-in's file name
+// so that users can distinguish those resource-oriented plug-ins in the plug-in list.
+// e.g. _b2icon_abc.dll
+// For detailed information, see "_b2icon_" sample plug-in.
+    int WINAPI BKC_OnRequestResource(int nType, int nImages, char** lppResourceName)
+    {
+        return 0;
+    }
+
+
+////////////////////////////////////////////////////////////////////////
+// Called when a message was retrieved and about to be filtered.
+    int WINAPI BKC_OnBeforeFilter(LPCSTR lpMessage, int* lpnAction, char** lppParam)
+    {
+    	/*
+        lpMessage: A complete message source, which ends with
+        "<CRLF>.<CRLF>".
+        lpnAction:	[out] Returns the filtering action to be applied.
+        	#define ACTION_NOTHING		-1	// Do nothing
+			#define ACTION_MOVEFOLDER	0	// Move to a folder
+			#define ACTION_COLORLABEL	1	// Set the color label
+			#define ACTION_SETFLAG		2	// Set the flag
+			#define ACTION_SOUND		3	// Make a sound
+			#define ACTION_RUNEXE		4	// Run executable file
+			#define ACTION_REPLY		5	// Reply to the message
+			#define ACTION_FORWARD		6	// Forward the message
+			#define ACTION_LEAVESERVER	7	// Leave/delete on the server.
+			#define ACTION_ADDHEADER	8	// Add "X-" header to the top of the message. (Plug-in only feature)
+		lppParam:	[out] Returns the pointer to the filtering parameter string.
+			ACTION_MOVEFOLDER:	Folder name. 
+								e.g. XXXXXXXX.mb\FolderName\
+								or \FolderName\ (begin with '\') to use
+								the mailbox the message belongs.
+			ACTION_COLORLABEL:	Color code(BGR) in hexadecimal. e.g. 0088FF
+			ACTION_SETFLAG:		"F" to set flag. "R" to set read.
+			ACTION_SOUND:		Name of the sound file.
+			ACTION_RUNEXE:		Command line to execute. %1 will be replaced with the path to the file that contains the entire message.
+			ACTION_REPLY:		Path to the template file without extension.
+									e.g. #Reply\MyReply
+			ACTION_FORWARD:		Path to the template file without extension. + "*" + Address to forward.
+									e.g. #Forward\MyForward*mail@address
+										 *mail@address (no template)
+			ACTION_LEAVESERVER:	The string consists of one or two decimals. The second decimal is optional.
+								Two decimals must be separated with a space.
+								First decimal	1: Delete the message from the server.
+												0: Leave the message on the server.
+								Second decimal	1: Do not store the message to the folder.
+												0: Store the message to the folder. (default action)
+								e.g. 0 (Leave the message on the server.)
+									 1 1 (Delete the message on the server and do not save. (Means KILL))
+			ACTION_ADDHEADER	"X-Header:data" that will be added at the top of the incoming message.
+								You can specify multiple headers by separating CRLF, but each header must
+								begin with "X-". e.g. "X-Plugindata1: test\r\nX-Plugindata2: test2";
+		*/
+    	
+    	/* Return values
+    	BKC_FILTER_DEFAULT	Do nothing and apply default filtering rules.
+    	BKC_FILTER_PASS		Apply default filtering rules after applying the rule it returns.
+    	BKC_FILTER_DONE		Do not apply default rules.
+    	BKC_FILTER_NEXT		Request Becky! to call this callback again so that another rules can be added.
+    	*/
+        return BKC_FILTER_DEFAULT;
+    }
+
+
+2.2 Becky! API
+
+#include "BeckyAPI.h"
+
+2.2.1 Initializing
+***************************************************************************
+    BOOL CBeckyAPI::InitAPI();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    TRUE: Success.
+    FALSE: Failure.
+        Becky!'s version may not be compatible with the SDK. Get
+        the latest version of SDK.
+
+Description:
+    Initializes Becky! API.
+    You must call this function before using any API functions.
+    If it fails, you can not use Becky! API.
+
+
+2.2.2 System
+***************************************************************************
+    LPCSTR CBeckyAPI::GetVersion();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    A string which represents the version of Becky!.
+    The format is:
+    X.YY.ZZ
+    X represents major version.
+    YY represents minor version
+    ZZ represents revision number.
+    e.g. 2.00.02
+
+Description:
+    Gets Becky!'s version.
+
+***************************************************************************
+    void  CBeckyAPI::Command(HWND hWnd, LPCSTR lpCmd);
+***************************************************************************
+Parameters:
+    hWnd:   The target window handle on which the command will be
+            executed. Or NULL for the main window.
+    lpCmd:  Command Name
+
+Return Value:
+    None
+
+Description:
+    Executes Becky!'s command.
+    Valid command names are found in the "Shortcut Keys" tab of
+    Becky!'s "General Settings".
+    e.g.
+        bka.Command(NULL, "SendReceive");
+
+    Not all functions can be called with this command. If you can not find
+    functions you want to call, retrieve the command IDs directly from
+    Becky!'s executable using SPY or a resource editor, and use
+    PostMessage(WM_COMMAND, nID, 0)
+
+
+***************************************************************************
+    BOOL CBeckyAPI::GetWindowHandles(HWND* lphMain,
+                                     HWND* lphTree,
+                                     HWND* lphList,
+                                     HWND* lphView);
+***************************************************************************
+Parameters:
+    lphMain:  [out] A pointer to HWND which receives the window handle of
+              the main frame.
+    lphTree:  [out] A pointer to HWND which receives the window handle of
+              the TreeView window.
+    lphList:  [out] A pointer to HWND which receives the window handle of
+              the ListView window.
+    lphView:  [out] A pointer to HWND which receives the window handle of
+              the message viewer window.
+
+Return Value:
+    TRUE: Success
+    FALSE: Failure
+
+Description:
+    Gets window handles of particular windows belong to Becky!
+
+***************************************************************************
+    UINT CBeckyAPI::RegisterCommand(LPCSTR lpszComment,
+                                    int nTarget,
+                                    void (CALLBACK* lpCallback)(HWND, LPARAM));
+***************************************************************************
+Parameters:
+    lpszComment: A short description for the command.
+    nTarget:  An identifier of the window on which the command is
+              executed.
+        BKC_MENU_MAIN
+        BKC_MENU_LISTVIEW
+        BKC_MENU_TREEVIEW
+        BKC_MENU_MSGVIEW
+        BKC_MENU_MSGEDIT
+        BKC_MENU_TASKTRAY
+        BKC_MENU_COMPOSE
+        BKC_MENU_COMPEDIT
+        BKC_MENU_COMPREF
+    lpCallback:  An address of the callback function which will be
+                 called when the command is executed.
+                 It takes the form of:
+                 void WINAPI CmdCallback(HWND hWnd, LPARAM lParam);
+                 Lower word of lParam is a menu command ID.
+                 Higher word of lParam is reserved for future use.
+
+Return Value:
+    Menu command ID which you can use to add a command to the menu.
+
+Description:
+    You can register a same callback function for different menu IDs. When
+    the callback is called, you can check lower word of lParam to
+    determine which menu ID is executed.
+
+    See the description of BKC_OnMenuInit() for more details.
+
+***************************************************************************
+    UINT CBeckyAPI::RegisterUICallback(UINT nID,
+                                    UINT (CALLBACK* lpCallback)(HWND, LPARAM));
+***************************************************************************
+Parameters:
+    nID:         Menu command ID
+    lpCallback:  An address of the callback function which will be
+                 called when the command UI for the menu ID is being
+                 updated
+                 It takes the form of:
+                 UINT WINAPI CmdCallback(HWND hWnd, LPARAM lParam);
+                 Lower word of lParam is a menu command ID.
+                 Higher word of lParam is reserved for future use.
+                 Return value can be a combination of the following
+                 flags:
+
+                 BKMENU_CMDUI_DISABLED   menu item will be grayed out
+                                         and the command will never been
+                                         called.
+                 BKMENU_CMDUI_CHECKED    menu item will be checked.
+
+Return Value:
+    Success: Menu command ID which you passed.
+    Failure: 0xffffffff (Menu command ID is invalid)
+
+Description:
+    You can register a same callback function for different menu IDs. When
+    the callback is called, you can check lower word of lParam to
+    determine which menu ID is executed.
+
+    Example of CmdUIProc:
+        UINT CmdUIProc(HWND hWnd, LPARAM lParam)
+        {
+            UINT nRetVal = 0;
+            if (you want to disable the menu item) {
+                nRetVal |= BKMENU_CMDUI_DISABLED;
+            }
+            if (you want to check the menu item) {
+                nRetVal |= BKMENU_CMDUI_CHECKED;
+            }
+            return nRetVal
+        }
+
+***************************************************************************
+    LPCSTR CBeckyAPI::GetDataFolder();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    Full path name of Becky!'s Data folder
+
+Description:
+    Gets the path of the data folder Becky! is currently using.
+    Mailbox subfolders (XXXXXXXX.mb) are located under this folder.
+
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+***************************************************************************
+    LPCSTR CBeckyAPI::GetTempFolder();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    Full path name of the temporary folder Becky! is using.
+
+Description:
+    Returns the temporary path which plug-ins can use.
+    It is strongly encouraged to use this folder if you want to create
+    temporary files.
+    Becky! will clean them up automatically when the program quits.
+    (It is always better to clean them up by yourself, though.)
+
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+***************************************************************************
+    LPCSTR CBeckyAPI::GetTempFileName(LPCSTR lpType);
+***************************************************************************
+Parameters:
+    lpType: File type of the temporary file you want to create.
+
+Return Value:
+    Full path name of the temporary file name.
+
+Description:
+    Gets an unique temporary file name under the temporary folder.
+    It returns only a name. Actual file is not created by this command.
+
+    e.g.
+    LPCTSTR lpName = bka.GetTempFileName("txt");
+
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+***************************************************************************
+    void CBeckyAPI::SetMessageText(HWND hWnd, LPCSTR lpszMsg);
+***************************************************************************
+Parameters:
+    hWnd:       Window handle of the target composing window,
+                or NULL for the main frame.
+    lpszMsg:    A string you want to set on the status bar.
+
+Return Value:
+    None
+
+Description:
+    Shows specified text on the status bar of the target window.
+
+***************************************************************************
+    BOOL CBeckyAPI::Connect(BOOL bConnect);
+***************************************************************************
+Parameters:
+    bConnect    Specify if you want to connect or disconnect to the Internet.
+
+Return Value:
+    TRUE:       Success
+    FALSE:      Failure
+
+Description:
+    Connects or disconnects to the Internet using current mailbox's setting.
+    If an user configured Becky! to use dialup, this function will work as an
+    auto dialer.
+    If an user is using LAN connection, this function does nothing.
+    Note that "Connect(FALSE)" doesn't always hang up the phone.
+    Whether it actually hangs up or not depends on the user's configuration
+    and the current situation 
+
+    e.g.
+        Connect(TRUE);
+        // Do any online operation.
+        Connect(FALSE);
+
+2.2.3 Mailbox management
+***************************************************************************
+    LPCSTR CBeckyAPI::GetCurrentMailBox();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    Identifier of the current mail box. It is actually a sub folder name
+    of the mailbox folder. (XXXXXXXX.mb\)
+
+Description:
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+***************************************************************************
+    void CBeckyAPI::SetCurrentMailBox(LPCSTR lpMailBox);
+***************************************************************************
+Parameters:
+    Identifier of the mailbox.
+
+Return Value:
+    None
+
+Description:
+    Switches the current mailbox.
+
+
+2.2.4 Folder management
+***************************************************************************
+    LPCSTR CBeckyAPI::GetCurrentFolder();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    Identifier of the current mail folder. It is actually a part
+    of the folder path. (XXXXXXXX.mb\!!!!Inbox\)
+
+Description:
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+***************************************************************************
+    void CBeckyAPI::SetCurrentFolder(LPCSTR lpFolderID);
+***************************************************************************
+Parameters:
+    lpFolderID: An ID of the folder you want to switch to.
+
+Return Value:
+    None
+
+Description:
+    Switches the current folder.
+
+
+***************************************************************************
+    LPCSTR CBeckyAPI::GetFolderDisplayName(LPCSTR lpFolderID);
+***************************************************************************
+Parameters:
+    lpFolderID: An ID of the folder you want to get the display name.
+
+Return Value:
+    Display name of the folder.
+
+Description:
+    Convert a folder ID to its display name.
+    e.g.
+    XXXXXXXX.mb\!!!!Inbox\ --> [Mailbox1]Inbox
+
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+2.2.5 Incoming message management
+***************************************************************************
+    LPCSTR CBeckyAPI::GetCurrentMail();
+***************************************************************************
+Parameters:
+    None
+
+Return Value:
+    Mail identifier of the current mail.
+    it is actually a combination of a folder ID, literal "?",
+    and an unique hexadecimal identifier.
+    (XXXXXXXX.mb\!!!!Inbox\?1234ABCD)
+    Returns empty string ("") if there is no current mail.
+
+Description:
+
+    Returned pointer is valid until next any API call. You should copy
+    it to your own buffer if you want to keep it.
+
+
+***************************************************************************
+    void CBeckyAPI::SetCurrentMail(LPCSTR lpMailID);
+***************************************************************************
+Parameters:
+    lpMailID:   An ID of the mail you want to select.
+
+Return Value:
+    None
+
+Description:
+    Switches the focused mail item.
+
+
+***************************************************************************
+    int CBeckyAPI::GetNextMail(int nStart,
+                               LPSTR lpszMailID,
+                               int nBuf,
+                               BOOL bSelected);
+***************************************************************************
+Parameters:
+    nStart:     Start position to find the next mail item. 
+                Set -1 for the first call.
+    lpszMailID: [out] A buffer which receives mail identifier of found mail.
+    nBuf:       The buffer size of lpszMailID.
+    bSelected:  Set TRUE if you want to get only selected items.
+
+Return Value:
+    A position of the item which is found. You can use it for the next call.
+    Returns -1 if no more items are found.
+
+Description:
+    e.g.
+
+    char szMailID[256];
+    int n = -1;
+    int nSelected = 0;
+    do {
+        n = bka.GetNextMail(n, szMailID, 256, TRUE);
+        nSelected++;
+    } while (n != -1)
+    nSelected--;
+    TRACE("%d items are selected", nSelected);
+
+
+***************************************************************************
+    void CBeckyAPI::SetSel(LPCSTR lpMailID, BOOL bSel);
+***************************************************************************
+Parameters:
+    lpMailID:   An ID of the mail item you want to select/deselect.
+    bSel:       TRUE to select the item.
+                FALSE to deselect the item.
+
+Return Value:
+    None
+
+Description:
+    Selects or Deselects the specified mail item.
+
+
+***************************************************************************
+    BOOL CBeckyAPI::AppendMessage(LPCSTR lpFolderID, LPCSTR lpszData);
+***************************************************************************
+Parameters:
+    lpFolderID:     An ID of the folder you want to append a message.
+    lpszData:       Message text you want to append. It must take the form of
+                    RFC822 message.
+
+Return Value:
+    TRUE:  Success
+    FALSE: Failure
+
+Description:
+    e.g.
+
+    LPSTR lpFolderID = bka.GetCurrentFolder();
+    bka.AppendMessage(lpFolderID, "From: me\r\nTo: you\r\n\r\nThis is test.\r\n");
+
+***************************************************************************
+    BOOL CBeckyAPI::NextUnread(BOOL bBackScroll, BOOL bGoNext);
+***************************************************************************
+Parameters:
+    bBackScroll:    If TRUE, the current message will backscroll.
+                    This is the same behavior when you hit SPACE key
+                    with Shift key.
+    bGoNext:        If TRUE, it will set read flag on the current message
+                    and go to a next unread message immediately.
+                    This is the same behavior when you hit SPACE key with
+                    Ctrl key.
+
+Return Value:
+    Always returns TRUE.
+
+Description:
+    This function act like when you hit SPACE key to browse unread
+    messages.
+
+Compatibility:
+    Becky! Ver.2.05 or newer.
+    You must make sure BKA_NextUnread function is exported before you
+    use it.
+
+***************************************************************************
+    BOOL CBeckyAPI::MoveSelectedMessages(LPCSTR lpFolderID, BOOL bCopy);
+***************************************************************************
+Parameters:
+    lpFolderID:     An ID of the folder you want to move items to.
+    bCopy:          Set TRUE if you want to copy items instead of moving.
+
+Return Value:
+    TRUE:  Success
+    FALSE: Failure
+
+Description:
+    Move the selected mail items to a specified folder.
+
+
+***************************************************************************
+    DWORD CBeckyAPI::GetStatus(LPCSTR lpMailID);
+***************************************************************************
+Parameters:
+    lpMailID:       An ID of the mail item you want to get the status flag.
+
+Return Value:
+    A status flag of the mail item. It can be a combination of the following
+    bit flag.
+    MESSAGE_READ         0x00000001     Message is read.
+    MESSAGE_FORWARDED    0x00000002     Message is forwarded.
+    MESSAGE_REPLIED      0x00000004     Message is replied.
+    MESSAGE_ATTACHMENT   0x00000008     Message has attachments
+    MESSAGE_PARTIAL      0x00000100     Message is a part of message/partial
+    MESSAGE_REDIRECT     0x00000200     Message is sent as a redirected message.
+                                        (Resent- headers are found.)
+
+Description:
+    e.g.
+
+    DWORD dwFlag = bka.GetStatus(lpMailID);
+    if (dwFlag & MESSAGE_READ) {
+        TRACE("This message is read");
+    }
+
+***************************************************************************
+    DWORD CBeckyAPI::SetStatus(LPCSTR lpMailID, DWORD dwSet, DWORD dwReset);
+***************************************************************************
+Parameters:
+    lpMailID:       An ID of the mail item you want to get the status flag.
+    dwSet          Status flags to be set.
+    dwReset       Status flags to be cleared.
+
+Return Value:
+    A new status flag of the mail item.
+
+Description:
+        You can modify only the
+        following bits.
+
+            MESSAGE_READ         0x00000001     Message is read.
+            MESSAGE_FORWARDED    0x00000002     Message is forwarded.
+            MESSAGE_REPLIED      0x00000004     Message is replied.
+
+        Other bits are simply ignored.
+
+Compatibility:
+        Becky! Ver.2.00.06 or higher.
+
+        InitAPI() will not return error even if SetStatus function is
+        not available.
+        If you want to use this function in your plug-in, check if
+        "SetStatus" function is not null after calling InitAPI().
+
+***************************************************************************
+    int CBeckyAPI::GetCharSet(LPCSTR lpMailID,
+                              LPSTR lpszCharSet,
+                              int nBuf);
+***************************************************************************
+Parameters:
+    lpMailID:       An ID of the mail item. Or NULL for the current
+                    mail.
+    lpszCharSet:    [out] A buffer to receive a charset name
+    nBuf:           Size of the buffer.
+
+Return Value:
+    ANSI code page.
+
+Description:
+    Obtains charset information of the specified mail item.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::GetSource(LPCSTR lpMailID);
+***************************************************************************
+Parameters:
+    lpMailID:       An ID of the mail item. Or NULL for the current
+                    mail.
+                    If the current mail is displaying a temporary
+                    content that was set by SetSource("TEMP", ...) API,
+                    GetSource(NULL) returns the source of the temporary
+                    content and GetSource(MailID) returns the source of
+                    the original content.
+
+Return Value:
+    A source of the mail item.
+    Returns NULL if mail item is not found.
+
+Description:
+    Gets a complete source of the specified mail item. It is not
+    decoded.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    void CBeckyAPI::SetSource(LPCSTR lpMailID, LPCSTR lpSource);
+***************************************************************************
+Parameters:
+    lpMailID:       An ID of the mail item. Or NULL for the current
+                    mail. 
+                    Specifying "TEMP", the source will be set to the
+                    current mail item temporarily. The change will be
+                    discarded when the user select other mail items.
+    lpSource:       A mail source to be set
+
+Return Value:
+    None
+
+Description:
+    Apply a mail source to the specified mail item. Existing data will
+    be completely overwritten by this command.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::GetHeader(LPCSTR lpMailID);
+***************************************************************************
+Parameters:
+    lpMailID:       An ID of the mail item. Or NULL for the current
+                    mail.
+
+Return Value:
+    A header part of the mail item.
+
+Description:
+    Gets a header part of the specified mail item. It is decoded.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    void CBeckyAPI::GetSpecifiedHeader(LPCSTR lpHeader,
+                                       LPSTR lpszData,
+                                       int nBuf);
+***************************************************************************
+Parameters:
+    lpHeader:       A header field to retrieve. e.g. "From", "Subject"
+    lpszData:       [out] A buffer to receive the data.
+    nBuf:           Size of lpszData.
+
+Return Value:
+    None
+
+Description:
+    Retrieve the data of the specified header field from the current
+    mail item. It could be a large string separated by CRLF, so better
+    prepare a sufficient buffer for particular headers like "To", "Cc", etc.
+
+    e.g.
+    char szData[1024];
+    bka.GetSpecifiedHeader("From", szData, 1024);
+    TRACE ("This mail is sent from %s", szData);
+
+
+***************************************************************************
+    void CBeckyAPI::SetSpecifiedHeader(LPCSTR lpHeader,
+                                       LPCSTR lpszData);
+***************************************************************************
+Parameters:
+    lpHeader:       A header field which data will be set to.
+    lpszData:       Data to be set.
+
+Return Value:
+    None
+
+Description:
+    Set the data to the specified header.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::GetText(LPSTR lpszMimeType, int nBuf);
+***************************************************************************
+Parameters:
+    lpszMimeType:   [out] A buffer to receive the MIME type of the text.
+                    It is usually "text/plain" but it could be
+                    "text/html" or others sometimes.
+    nBuf:           Size of the buffer
+
+Return Value:
+    Text of the current mail item.
+
+Description:
+    Gets the text part of the current mail item. It is decoded.
+    Unlike above functions, it works only the current mail.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+***************************************************************************
+    void CBeckyAPI::SetText(int nMode, LPCSTR lpText);
+***************************************************************************
+Parameters:
+    nMode:      -1: Insert at the top of the existing text.
+                -2: Insert at the top of the existing text temporarily.
+                0:  Replace the existing text.
+                1:  Append to the existing text.
+                2:  Append to the existing text temporarily.
+    lpText:     Text to be set.
+
+Return Value:
+    None
+
+Description:
+    Sets text to the current mail item.
+
+
+
+2.2.6 Outgoing message management
+***************************************************************************
+    HWND CBeckyAPI::ComposeMail(LPCSTR lpURL);
+***************************************************************************
+Parameters:
+    lpURL:      "mailto:" URL string to be passed to an outgoing message.
+                e.g. "mailto:mail@address"
+
+Return Value:
+    Window handle of the composing window.
+
+Description:
+    You can use "mailto" URL scheme defined in RFC2368.
+    The following headers can be also used for special purpose with Becky!.
+
+    X-Becky-Attachment: full path name of the file you want to attach.
+    X-Becky-Template: full path name of the template file you want to
+                      apply.
+
+    e.g.
+    bka.ComposeMail("mailto:mail@address?X-Becky-Attachment=C:\test.txt");
+
+    You should URL-encode the data if it contains one of the following characters.
+    %,?,&,=,~, and <= 0x20
+    e.g.
+    bka.ComposeMail("mailto:Name%20<mail@address>");
+
+
+***************************************************************************
+    int CBeckyAPI::CompGetCharSet(HWND hWnd, 
+                                  LPSTR lpszCharSet,
+                                  int nBuf);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+    lpszCharSet:    [out] A buffer to receive a charset name
+    nBuf:           Size of the buffer.
+
+Return Value:
+    ANSI code page.
+
+Description:
+    Obtains charset information of the outgoing message.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::CompGetSource(HWND hWnd);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+
+Return Value:
+    A source of the outgoing message.
+
+Description:
+    Gets a complete source of the outgoing message.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    void CBeckyAPI::CompSetSource(HWND hWnd, LPCSTR lpSource);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+    lpSource:       A mail source to be set
+
+Return Value:
+    None
+
+Description:
+    Apply a mail source to the outgoing message. Existing data will
+    be completely overwritten by this command.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::CompGetHeader(HWND hWnd);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+
+Return Value:
+    A header part of the outgoing message.
+
+Description:
+    Gets a header part of the outgoing message.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    void CBeckyAPI::CompGetSpecifiedHeader(HWND hWnd,
+                                           LPCSTR lpHeader,
+                                           LPSTR lpszData,
+                                           int nBuf);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+    lpHeader:       A header field to retrieve. e.g. "From", "Subject"
+    lpszData:       [out] A buffer to receive the data.
+    nBuf:           Size of lpszData.
+
+Return Value:
+    None
+
+Description:
+    Retrieve the data of the specified header field from the outgoing
+    message. It could be a large string separated by CRLF, so better
+    prepare a sufficient buffer for particular headers like "To", "Cc", etc.
+    Usually, you cant retrieve "X-Becky-" headers, which Becky! uses
+    internally. One exception is "X-Becky-Ref", which contains the
+    information about the reference mail for the replying/forwarding
+    message. It is similar to Mail ID, but ">" character is used for
+    the separator instead of "?".
+    e.g. X-Becky-Ref: XXXXXXXX.mb\!!!!Inbox\>1234ABCD
+
+***************************************************************************
+    void CBeckyAPI::CompSetSpecifiedHeader(HWND hWnd,
+                                           LPCSTR lpHeader,
+                                           LPCSTR lpszData);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+    lpHeader:       A header field which data will be set to.
+    lpszData:       Data to be set.
+
+Return Value:
+    None
+
+Description:
+    Set the data to the specified header.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::CompGetText(HWND hWnd,
+                                 LPSTR lpszMimeType,
+                                 int nBuf);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+    lpszMimeType:   [out] A buffer to receive the MIME type of the text.
+                    It is usually "text/plain" but it could be
+                    "text/html" or others sometimes.
+    nBuf:           Size of the buffer
+
+Return Value:
+    Text of the outgoing message.
+
+Description:
+    Gets the text part of the outgoing message.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    void CBeckyAPI::CompSetText(HWND hWnd,
+                                int nMode,
+                                LPCSTR lpText);
+***************************************************************************
+Parameters:
+    hWnd:       A window handle of the composing window.
+    nMode:      -1: Insert at the top of the existing text.
+                -2: Insert at the top of the existing text temporarily.
+                0:  Replace the existing text.
+                1:  Append to the existing text.
+                2:  Append to the existing text temporarily.
+    lpText:     Text to be set.
+
+Return Value:
+    None
+
+Description:
+    Sets text to the outgoing message.
+
+
+***************************************************************************
+    void CBeckyAPI::CompAttachFile(HWND hWnd,
+                                   LPCSTR lpAttachFile,
+                                   LPCSTR lpMimeType);
+***************************************************************************
+Parameters:
+    hWnd:           A window handle of the composing window.
+    lpAttachFile:   A full path name of the file to be attached.
+    lpMimeType:     MIME type of the file. It can be NULL.
+
+Return Value:
+    None
+
+Description:
+    Attaches a specified file to the outgoing message.
+
+
+2.2.7 Memory management
+***************************************************************************
+    LPVOID CBeckyAPI::Alloc(DWORD dwSize);
+***************************************************************************
+Parameters:
+    dwSize:         Size to allocate
+
+Return Value:
+    Pointer to the allocated buffer.
+
+Description:
+    Allocates a memory block.
+    It is strongly encouraged to use this function to allocate temporary
+    buffer instead of using malloc() C library function. Allocated
+    memory block will be garbaged by Becky! on exiting a callback even
+    if you forget to call CBeckyAPI::Free().
+
+    e.g.
+    int WINAPI BKC_OnEveryMinute()
+    {
+        LPSTR lpBuf = bka.Alloc(256);
+
+        ...
+        
+        // bka.Free(lpBuf); // You can call this, but you don't have to.
+        return 0;
+    }
+
+
+
+***************************************************************************
+    LPVOID CBeckyAPI::ReAlloc(LPVOID lpVoid, DWORD dwSize);
+***************************************************************************
+Parameters:
+    lpVoid:         The pointer to the allocated buffer.
+    dwSize:         Size to reallocate
+
+Return Value:
+    Pointer to the reallocated buffer.
+
+Description:
+
+
+***************************************************************************
+    void CBeckyAPI::Free(LPVOID lpVoid);
+***************************************************************************
+Parameters:
+    lpVoid:         The pointer to the buffer.
+
+Return Value:
+    None
+
+Description:
+    Frees a memory block allocated by CBeckyAPI::Alloc() command.
+
+
+2.2.8 Data conversion
+***************************************************************************
+    LPSTR CBeckyAPI::ISO_2022_JP(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes Shift_JIS to ISO-2022-JP, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::ISO_2022_KR(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes EUC-KR to ISO-2022-KR, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::HZ_GB2312(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes GB2312 to HZ-GB-2312, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::ISO_8859_2(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes CP1250 to ISO-8859-2, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::EUC_JP(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes Shift_JIS to EUC-JP, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::UTF_7(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes MBCS to UTF-7, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::UTF_8(LPCSTR lpSrc, BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpSrc:          A source string.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Encodes MBCS to UTF-8, or vice versa.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+***************************************************************************
+    BOOL CBeckyAPI::B64Convert(LPCSTR lpszOutFile,
+                               LPCSTR lpszInFile,
+                               BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpszOutFile:    A full path name of the output file.
+    lpszInFile:     A full path name of the input file.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    TRUE:  Success
+    FALSE: Failure
+
+Description:
+    Encodes binary file to Base64 text file, or vice versa.
+
+
+***************************************************************************
+    BOOL CBeckyAPI::QPConvert(LPCSTR lpszOutFile,
+                              LPCSTR lpszInFile,
+                              BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpszOutFile:    A full path name of the output file.
+    lpszInFile:     A full path name of the input file.
+    bEncode:        TRUE:  Encode
+                    FALSE: Decode
+
+Return Value:
+    TRUE:  Success
+    FALSE: Failure
+
+Description:
+    Encodes binary file to Quoted-Printable text file, or vice versa.
+
+
+***************************************************************************
+    LPSTR CBeckyAPI::MIMEHeader(LPCSTR lpszIn, 
+                                LPSTR lpszCharSet,
+                                int nBuf,
+                                BOOL bEncode);
+***************************************************************************
+Parameters:
+    lpszIn:         A source string.
+    lpszCharSet:    bEncode == TRUE
+                        The charset to be used for encoding.
+                    bEncode == FALSE
+                        [out] A buffer to receive the name of charset.
+    nBuf:           Size of lpszCharSet. (Ignored if bEncode == TRUE)
+    bEncode:        TRUE:  MIME-encode
+                    FALSE: MIME-decode
+
+Return Value:
+    A converted string.
+
+Description:
+    Processes MIME header encoding/decoding.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+
+2.2.9 Misc.
+***************************************************************************
+    LPSTR CBeckyAPI::SerializeRcpts(LPCSTR lpAddresses);
+***************************************************************************
+Parameters:
+    lpAddresses:        E-mail addresses delimitered by ",".
+
+Return Value:
+    Formatted E-mail addresses delimitered by ",\r\n "
+
+Description:
+    Format e-mail addresses expanding address groups.
+    A returned pointer will be garbaged upon exiting a callback,
+    or you can explicitly discard it using CBeckyAPI::Free().
+
+    e.g.
+    LPSTR lpAddr = bka.SerializeRcpt("mail@address, @\"Group1\"");
+    -->
+    mail@address,
+     member1@of.group1
+     member2@of.group1
+     member3@of.group1
+     member4@of.group1
+
+
