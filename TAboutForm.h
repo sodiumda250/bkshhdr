@@ -6,6 +6,7 @@
 #include <vcl\Controls.hpp>
 #include <vcl\StdCtrls.hpp>
 #include <vcl\Forms.hpp>
+#include <vcl\Dialogs.hpp>
 //---------------------------------------------------------------------------
 class TAboutForm : public TForm
 {
@@ -17,8 +18,10 @@ __published:	// IDE 管理のコンポーネント
    TLabel *HeaderCaption;
    TEdit *HeaderList;
    TCheckBox *isAlwaysOnTop;
-
-    TCheckBox *HideIfNoHeader;
+   TCheckBox *HideIfNoHeader;
+   TButton *Fonts;
+   TFontDialog *FontDialog;
+   void __fastcall FontsClick(TObject *Sender);
 private:	// ユーザー宣言
 public:		// ユーザー宣言
 	__fastcall TAboutForm(TComponent* Owner);

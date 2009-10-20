@@ -76,7 +76,7 @@ int CALLBACK CallBeckyCBTProc(
         case SW_RESTORE:
         case SW_SHOWDEFAULT:
         case SW_SHOWNORMAL:
-            // Show Windows       
+            // Show Windows
             PtrShowFormList->Show();
             break;
         case SW_HIDE:
@@ -105,8 +105,13 @@ __fastcall TShowFormList::TShowFormList(const char *szIni)
 
     DebugNum = 0;
 
+    Font = new TFont;
+
     // Reading .ini file
     IniFile = new TIniFile(AnsiString(szIni));
+
+    Font->Name = IniFile->ReadString("BkShHdr", "FontName", "System");
+    Font->Size = IniFile->ReadInteger("BkShHdr", "FontSize", 14);
 
     NewList();
 
@@ -156,6 +161,7 @@ void __fastcall TShowFormList::NewList()
                 Last->Next = ptr;
                 Last = ptr;
             }
+            ptr->SetFont(*Font);
             if (AlwaysOnTop == true) {
                 // í‚ÉÅ‘O—ñ‚É•\Ž¦
                 ::SetWindowPos(ptr->Handle,	// handle of window
@@ -195,6 +201,7 @@ __fastcall TShowFormList::~TShowFormList()
     DeleteList();
 
     delete IniFile;
+    delete Font;
 
     PtrShowFormList = NULL;
 
@@ -212,6 +219,9 @@ __fastcall TShowFormList::~TShowFormList()
 void __fastcall TShowFormList::DeleteList()
 {
     TShowForm *ptr;
+
+    IniFile->WriteString("BkShHdr", "FontName", Font->Name);
+    IniFile->WriteInteger("BkShHdr", "FontSize", Font->Size);
 
     ptr = List;
     while (ptr != NULL) {
@@ -347,6 +357,8 @@ void __fastcall TShowFormList::SetProperty(const AnsiString& pHead,
         HideIfNoHeader = false;
         IniFile->WriteBool("BkShHdr", "HideIfNoHeader", false);
     }
+    IniFile->WriteString("BkShHdr", "FontName", Font->Name);
+    IniFile->WriteInteger("BkShHdr", "FontSize", Font->Size);
 
     ToShow = new bool[HeaderStr->Count];
     for (j = 0; j < HeaderStr->Count; j++) {
@@ -535,6 +547,4 @@ void __fastcall TShowForm::DblClick(TObject *Sender)
 
 }
 //---------------------------------------------------------------------------
-
-
 

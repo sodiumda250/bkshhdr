@@ -1,6 +1,6 @@
 [BkShHdr] Display Some Headers on other window
-                                               Jul.23 2000 woods(Ryuichro Hayashi)
-                                               Dec.17 2000
+                                         Jul.23 2000 woods(Ryuichro Hayashi)
+                                         Dec.24 2000
 
 BkShHdr is a Plug-in software of Becky! Ver.2(maybe or later) that displays
 header you list up on other windows.
@@ -9,18 +9,19 @@ It is useful for...
 * to identify redirect mail
 
 [Installation]
-exit Becky!
-Copy BkShHdr.dll to Becky!'s Plug-in directory
-(maybe C:\Program Files\RIMArts\B2\PlugIns)
-Boot Becky!
+*exit Becky!
+*Copy BkShHdr.dll to Becky!'s Plug-in directory
+ (maybe C:\Program Files\RIMArts\B2\PlugIns)
+*Boot Becky!
 
 [Source codes]
 This program is written for Borland C++ Builder(Ver.1.0)
+But these codes contains Japanese comment so you may need 
+the Japanese Version compiler.
 
 [Configuration]
 You can specify headers with Becky!'s menu[tool]->[plug-in(?)]->[BkShowHeader]
 (I have no English version of Becky, so I don't know where to customize)
-
 
 
 [WARRANTIES]
@@ -37,6 +38,7 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE
 
 [History]
+Dec.24 2000: 0.3.0E Released(Add Font Changer)
 Dec.18 2000: 0.2.4E Released(Change Fonts and some bug fix)
 Dec.17 2000: 0.2.3E Released(Initial version of English)
 

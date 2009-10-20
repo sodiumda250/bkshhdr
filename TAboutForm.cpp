@@ -12,3 +12,8 @@ __fastcall TAboutForm::TAboutForm(TComponent* Owner)
 {
 }
 //---------------------------------------------------------------------------
+void __fastcall TAboutForm::FontsClick(TObject *Sender)
+{
+    FontDialog->Execute();
+}
+//---------------------------------------------------------------------------

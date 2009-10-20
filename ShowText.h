@@ -30,6 +30,7 @@ public:		// ユーザー宣言
     inline void SetHideIfNoHeader(bool flag){HideIfNoHeader = flag;};  // HideIfNoHeaderフラグを設定する。
     inline bool IsMyWindowsHandle(HWND handle)  // 指定されたハンドルが自分のWindowHandleかどうかを返却する。
               {return ((Handle == handle || ::IsChild(Handle, handle) != false)?true:false);};
+    inline void SetFont(TFont &SrcFont){ShowText->Font->Assign(&SrcFont);};
 };
 //---------------------------------------------------------------------------
 extern TShowForm *ShowForm;
@@ -52,6 +53,7 @@ private:
     HWND hView;  // Becky!のメールビューメインウィンドウハンドル
     long DebugNum;
     bool HideIfNoHeader;
+    TFont *Font;
 
 public:
     __fastcall TShowFormList(const char*);
@@ -71,6 +73,8 @@ public:
     inline HWND GetBeckyList(){return hList;};
     inline HWND GetBeckyView(){return hView;};
     bool __fastcall IsMyWindowsHandle(HWND);
+    inline void SetFont(TFont &SrcFont){Font->Assign(&SrcFont);};
+    inline TFont* GetFont(){return Font;};
 };
 
 #endif

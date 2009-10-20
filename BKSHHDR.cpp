@@ -38,7 +38,7 @@ char szIni[_MAX_PATH+2]; // Ini file to save your plugin settings.
 
 const char PlugInName[] = "Show-Header Plug-In";
 const char Vender[] = "woods";
-const char Version[] = "0.2.4";
+const char Version[] = "0.3.0";
 const char Description[] = "任意のヘッダを別ウィンドウに表示する";
 
 TShowFormList *ShowFormList = NULL;
@@ -96,7 +96,6 @@ int WINAPI BKC_OnStart()
 {
     // Always return 0.
     ShowFormList = new TShowFormList(szIni);
-    // ShowFormList->Show();
     ShowFormList->SetParentWin();
     return 0;
 }
@@ -343,8 +342,12 @@ int WINAPI BKC_OnPlugInSetup(HWND hWnd)
 
     AboutForm->HeaderList->Text = ShowFormList->SetHeaderList(*Head);
 
+    AboutForm->FontDialog->Font = ShowFormList->GetFont();
+
     ret = AboutForm->ShowModal();
     if (ret == mrOk) {
+        ShowFormList->SetFont(*(AboutForm->FontDialog->Font));
+
         ShowFormList->SetProperty(AboutForm->HeaderList->Text,
                                   AboutForm->isAlwaysOnTop->State,
                                   AboutForm->HideIfNoHeader->State);
