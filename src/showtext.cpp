@@ -10,6 +10,8 @@
 #pragma resource "*.dfm"
 TShowForm *ShowForm;
 
+//GetTesxtExtentExPoint() to get size(Width) of string(memo)
+
 extern HINSTANCE g_hInstance; // instance of this DLL(maybe(--;;;)
 extern CBeckyAPI bka; // You can have only one instance in a project.
 
@@ -25,13 +27,6 @@ int CALLBACK CallBeckyWndProc(
 {
     unsigned long pid_before = 0;
     unsigned long pid_after = 0;
-
-    int ret = 0;
-
-
-    if (wParam < 0) {
-        return ::CallNextHookEx(hhk_GetMessage, nCode, wParam, lParam);
-    }
 
     if (((CWPSTRUCT *)lParam)->hwnd != PtrShowFormList->GetBeckyMain()) {
         return ::CallNextHookEx(hhk_GetMessage, nCode, wParam, lParam);
@@ -102,6 +97,15 @@ __fastcall TShowFormList::TShowFormList(const char *szIni)
     List = Last = NULL;
     AlwaysOnTop = false;
     HideIfNoHeader = false;
+    HideTaskBar = false;
+    volatile HWND Handle = NULL;
+
+    // Dummy Window
+    Dummy = new TDummyForm(NULL);
+    //Dummy->CreateHandle();
+    Handle = Dummy->Handle;
+    Dummy->SetWindowStatus();
+
 
     DebugNum = 0;
 
@@ -149,11 +153,12 @@ void __fastcall TShowFormList::NewList()
 
     AlwaysOnTop = IniFile->ReadBool("BkShHdr", "AlwaysOnTop", false);
     HideIfNoHeader = IniFile->ReadBool("BkShHdr", "HideIfNoHeader", true);
+    HideTaskBar = IniFile->ReadBool("BkShHdr", "HideTaskBar", true);
 
     listcount = HeaderStr->Count;
     for (i = 0; i < listcount; i++) {
         if (IniFile->ReadBool(HeaderStr->Strings[i], "Show", true) == true) {
-            ptr = new TShowForm(NULL, IniFile, (HeaderStr->Strings[i]).c_str());
+            ptr = new TShowForm(Dummy, IniFile, (HeaderStr->Strings[i]).c_str());
             ptr->Initialize();
             if (List == NULL) {
                 List = Last = ptr;
@@ -187,10 +192,10 @@ void __fastcall TShowFormList::NewList()
             if (HideIfNoHeader) {
                 ptr->Hide();
             }
+            ptr->SetHideTaskBar(HideTaskBar);
         }
     }
-
-    SetParentWin(hMain);
+    //SetParentWin(Dummy->Handle);
 
     delete HeaderStr;
 }
@@ -213,6 +218,8 @@ __fastcall TShowFormList::~TShowFormList()
         ::UnhookWindowsHookEx(hhk_GetMessage);
         hhk_GetMessage = NULL;
     }
+
+    delete Dummy;
 }
 
 //---------------------------------------------------------------------------
@@ -322,16 +329,29 @@ void __fastcall TShowFormList::SetParentWin(HWND hMain)
 }
 
 //---------------------------------------------------------------------------
+void __fastcall TShowFormList::SetHideTaskBar(bool hide)
+{
+    TShowForm *ptr;
+
+    ptr = List;
+    while (ptr != NULL) {
+        ptr->SetHideTaskBar(hide);
+        ptr = ptr->Next;
+    }
+}
+
+//---------------------------------------------------------------------------
 void __fastcall TShowFormList::SetProperty(const AnsiString& pHead,
                                            const TCheckBoxState pState,
-                                           const TCheckBoxState pHideIfNoHeader)
+                                           const TCheckBoxState pHideIfNoHeader,
+                                           const TCheckBoxState pHideTaskBar)
 {
     char buf[512];
     int bufptr;
     int i, j;
     bool *ToShow = NULL;
     TStringList *HeaderStr;
-    int Debugint = 0;char Debugbuf[512];
+    // int Debugint = 0;char Debugbuf[512];
 
     memset(buf, 0, sizeof(buf));
     bufptr = 0;
@@ -357,6 +377,13 @@ void __fastcall TShowFormList::SetProperty(const AnsiString& pHead,
         HideIfNoHeader = false;
         IniFile->WriteBool("BkShHdr", "HideIfNoHeader", false);
     }
+    if (pHideTaskBar == cbChecked) {
+        HideTaskBar = true;
+        IniFile->WriteBool("BkShHdr", "HideTaskBar", true);
+    } else {
+        HideTaskBar = false;
+        IniFile->WriteBool("BkShHdr", "HideTaskBar", false);
+    }
     IniFile->WriteString("BkShHdr", "FontName", Font->Name);
     IniFile->WriteInteger("BkShHdr", "FontSize", Font->Size);
 
@@ -364,11 +391,11 @@ void __fastcall TShowFormList::SetProperty(const AnsiString& pHead,
     for (j = 0; j < HeaderStr->Count; j++) {
         ToShow[j] = false;
     }
-    for (i = 1; i <= pHead.Length(); i++) {
-        if (pHead[i] != ',' && pHead[i] != 0) { // コンマでも文字列の終端でもなければ
-            if (!isspace(pHead[i])) {  // 空白文字でもなければ
+    for (i = 0; i < pHead.Length(); i++) {
+        if (pHead.c_str()[i] != ',' && pHead.c_str()[i] != 0) { // コンマでも文字列の終端でもなければ
+            if (!isspace(pHead.c_str()[i])) {  // 空白文字でもなければ
                 if (bufptr < sizeof(buf)) {
-                    buf[bufptr++] = pHead[i];
+                    buf[bufptr++] = pHead.c_str()[i];
                 }
             }
         } else { // コンマか文字列の終端なら
@@ -439,11 +466,13 @@ AnsiString &TShowFormList::SetHeaderList(AnsiString &Head)
 }
 
 //---------------------------------------------------------------------------
-__fastcall TShowForm::TShowForm(TComponent* Owner,
+__fastcall TShowForm::TShowForm(TForm* Owner,
                                 TIniFile *pIniFile,
                                 const char *PrmHeader)
-	: TForm(Owner)
+                     :TForm(Owner)
 {
+	Parent = Owner;
+
 	SetHeader(PrmHeader);
 	IniFile = pIniFile;
 
@@ -499,36 +528,69 @@ void __fastcall TShowForm::Initialize()
 }
 
 //---------------------------------------------------------------------------
-HWND TShowForm::SetParentWin(HWND parent)
+HWND TShowForm::SetParentWin(HWND parenthandle)
 {
     long lStyle;
     HWND Rtn;
     long rtnerrno;
     char buf[128];
 
-	// return parent;
+    if (Handle == NULL) {
+        return NULL;
+    }
 
-	Rtn = ::SetParent(Handle, Parent);
-	if (Rtn == NULL) {
-	    rtnerrno = ::GetLastError();
+    // lStyle = ::GetWindowLong(Handle, GWL_STYLE);
+    // lStyle &= ~(WS_POPUP);
+    // lStyle |= WS_CHILD;
+    // ::SetWindowLong(Handle, GWL_STYLE, lStyle);
 
-	    sprintf(buf, "errno=%d", rtnerrno);
-	    MessageBox(Handle, buf, "SetParent", MB_OK);
-	}
-    lStyle = ::GetWindowLong(Handle, GWL_STYLE);
-    lStyle |= WS_OVERLAPPED | WS_POPUP;
-    ::SetWindowLong(Handle, GWL_STYLE, lStyle);
+    Rtn = ::SetParent(Handle, parenthandle);
+    if (Rtn == NULL) {
+        rtnerrno = ::GetLastError();
 
+        sprintf(buf, "Parent=[0x%08X] Handle=[0x%08X] errno=%d", parenthandle, Handle, rtnerrno);
+        MessageBox(Handle, buf, "SetParent", MB_OK);
+        lStyle = ::GetWindowLong(Handle, GWL_STYLE);
+        lStyle |= WS_VISIBLE;
+        lStyle |= WS_POPUP;
+        lStyle &= ~(WS_CHILD);
+        ::SetWindowLong(Handle, GWL_STYLE, lStyle);
+    } else {
+        lStyle = ::GetWindowLong(Handle, GWL_STYLE);
+        lStyle |= WS_VISIBLE;
+        lStyle |= WS_CHILD;
+        lStyle |= WS_SYSMENU;
+        lStyle &= ~(WS_POPUP);
+        lStyle &= ~(WS_CLIPSIBLINGS);
+        ::SetWindowLong(Handle, GWL_STYLE, lStyle);
+    }
 	return Rtn;
 }
-
-
 
 //---------------------------------------------------------------------------
 void __fastcall TShowForm::FormResize(TObject *Sender)
 {
      ShowText->Height = ClientHeight;
      ShowText->Width  = ClientWidth;
+}
+//---------------------------------------------------------------------------
+void __fastcall TShowForm::SetHideTaskBar(bool hide)
+{
+    long lStyle = ::GetWindowLong(Handle, GWL_EXSTYLE);
+    if (hide) {
+        lStyle |= WS_EX_TOOLWINDOW;
+    } else {
+        lStyle &= ~(WS_EX_TOOLWINDOW);
+    }
+    ::SetWindowLong(Handle, GWL_EXSTYLE, lStyle);
+    if (lStyle &= WS_VISIBLE) {
+        ::ShowWindow(Handle, SW_HIDE);
+        ::ShowWindow(Handle, SW_SHOW);
+    }
+
+    long OWidth = Width;
+    ::MoveWindow(Handle, Left, Top, Width + 1, Height, FALSE);
+    ::MoveWindow(Handle, Left, Top, OWidth, Height, TRUE);
 }
 //---------------------------------------------------------------------------
 void __fastcall TShowForm::DblClick(TObject *Sender)

@@ -8,19 +8,23 @@
 #include <vcl\StdCtrls.hpp>
 #include <vcl\Forms.hpp>
 //---------------------------------------------------------------------------
+#include "TDummyForm.h"
+//---------------------------------------------------------------------------
 class TShowForm : public TForm
 {
 __published:	// IDE 管理のコンポーネント
-	 TMemo *ShowText;
-	 void __fastcall FormResize(TObject *Sender);
+    TMemo *ShowText;
+    void __fastcall FormResize(TObject *Sender);
     void __fastcall DblClick(TObject *Sender);
 private:	// ユーザー宣言
     char * Header;
     TIniFile *IniFile; // Iniファイルクラスのエイリアス、実体はTShowFormListで管理する。
     bool HideIfNoHeader;  // これがtrueのとき、ヘッダがない場合Windowを隠す。
+    bool HideTaskBar;  // これがtrueのときタスクバーのアイコンを非表示にする。
+    TForm *Parent; //親フォーム
 public:		// ユーザー宣言
     TShowForm *Next;  // 次のリスト要素を示す。
-	__fastcall TShowForm::TShowForm(TComponent* Owner, TIniFile *IniFile, const char *PrmHeader);
+	__fastcall TShowForm::TShowForm(TForm* Owner, TIniFile *IniFile, const char *PrmHeader);
 	__fastcall TShowForm::~TShowForm();
 	void __fastcall Initialize();  // コンストラクタで行わない初期化を行う。
 	inline const char * GetHeader(){return Header;};  // 表示すべきヘッダ名を返却する。
@@ -31,6 +35,7 @@ public:		// ユーザー宣言
     inline bool IsMyWindowsHandle(HWND handle)  // 指定されたハンドルが自分のWindowHandleかどうかを返却する。
               {return ((Handle == handle || ::IsChild(Handle, handle) != false)?true:false);};
     inline void SetFont(TFont &SrcFont){ShowText->Font->Assign(&SrcFont);};
+    void __fastcall SetHideTaskBar(bool hide);
 };
 //---------------------------------------------------------------------------
 extern TShowForm *ShowForm;
@@ -40,11 +45,13 @@ extern TShowForm *ShowForm;
 class TShowFormList
 {
 private:
+    TDummyForm *Dummy;// タスクバー非表示用ダミーウィンドウ
     int listcount;  // 表示ヘッダリストの要素数
     TShowForm *List; // 表示ヘッダリストの先頭要素
     TShowForm *Last;  // 表示ヘッダリストの最終要素
     TIniFile *IniFile; // このプラグインで使用しているiniファイルのオブジェクト
     bool AlwaysOnTop;  // 「常に一番上に表示」オプションの値
+    bool HideTaskBar;  // if true hide taskbar-icon
     void __fastcall NewList();
     void __fastcall DeleteList();
     HWND hMain;  // Becky!のメインウィンドウハンドル
@@ -54,19 +61,19 @@ private:
     long DebugNum;
     bool HideIfNoHeader;
     TFont *Font;
-
 public:
     __fastcall TShowFormList(const char*);
     __fastcall ~TShowFormList();
     inline int count(){return listcount;};
     int __fastcall ShowHeader(LPCSTR lpMailID);
-    void __fastcall SetProperty(const AnsiString&, const TCheckBoxState, const TCheckBoxState);
+    void __fastcall SetProperty(const AnsiString&, const TCheckBoxState, const TCheckBoxState, const TCheckBoxState);
     void __fastcall Show();
     void __fastcall Hide();
     void __fastcall SetParentWin(HWND hMain);
     inline void SetParentWin(void){SetParentWin(hMain);};
     inline bool ShowAlwaysOnTop(){return AlwaysOnTop;};
     inline bool isHideIfNoHeader(){return HideIfNoHeader;};
+    inline bool isHideTaskBar(){return HideTaskBar;};
     AnsiString &SetHeaderList(AnsiString &);
     inline HWND GetBeckyMain(){return hMain;};
     inline HWND GetBeckyTree(){return hTree;};
@@ -74,6 +81,7 @@ public:
     inline HWND GetBeckyView(){return hView;};
     bool __fastcall IsMyWindowsHandle(HWND);
     inline void SetFont(TFont &SrcFont){Font->Assign(&SrcFont);};
+    void __fastcall SetHideTaskBar(bool hide);
     inline TFont* GetFont(){return Font;};
 };
 

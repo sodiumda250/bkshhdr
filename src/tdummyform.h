@@ -1,32 +1,23 @@
 //---------------------------------------------------------------------------
-#ifndef TAboutFormH
-#define TAboutFormH
+#ifndef TDummyFormH
+#define TDummyFormH
 //---------------------------------------------------------------------------
 #include <vcl\Classes.hpp>
 #include <vcl\Controls.hpp>
 #include <vcl\StdCtrls.hpp>
 #include <vcl\Forms.hpp>
-#include <vcl\Dialogs.hpp>
 //---------------------------------------------------------------------------
-class TAboutForm : public TForm
+class TDummyForm : public TForm
 {
 __published:	// IDE 管理のコンポーネント
-	TButton *OK;
-	TButton *Cancel;
-	TLabel *ProgramName;
-   TLabel *Version;
-   TLabel *HeaderCaption;
-   TEdit *HeaderList;
-   TCheckBox *isAlwaysOnTop;
-   TCheckBox *HideIfNoHeader;
-   TButton *Fonts;
-   TFontDialog *FontDialog;
-   void __fastcall FontsClick(TObject *Sender);
 private:	// ユーザー宣言
+protected:
+    virtual void __fastcall CreateParams(TCreateParams &Params);
 public:		// ユーザー宣言
-	__fastcall TAboutForm(TComponent* Owner);
+    __fastcall TDummyForm(TComponent* Owner);
+    virtual void __fastcall SetWindowStatus(void);
 };
 //---------------------------------------------------------------------------
-extern TAboutForm *AboutForm;
+extern TDummyForm *DummyForm;
 //---------------------------------------------------------------------------
 #endif
